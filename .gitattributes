@@ -1,0 +1,7 @@
+# Saltos de línea LF en todo el repo (evita diffs falsos entre Windows y Mac/Linux)
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.pbix binary

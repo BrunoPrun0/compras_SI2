@@ -85,6 +85,13 @@ desktop.ini
 .pbi/cache.abf
 
 # ==========================================
+# Material de asistentes de IA (se comparte fuera del repo)
+# ==========================================
+docs/prompts/
+CLAUDE.md
+.claude/
+
+# ==========================================
 # Varios
 # ==========================================
 *.tmp
