@@ -54,7 +54,9 @@
   font-weight: 700;
   color: var(--lego-yellow);
   letter-spacing: -0.5px;
-  text-shadow: 0 2px 0 var(--lego-yellow-dark), 0 3px 8px rgba(0, 0, 0, 0.22);
+  text-shadow:
+    0 2px 0 var(--lego-yellow-dark),
+    0 3px 8px rgba(0, 0, 0, 0.22);
   user-select: none;
 }
 
@@ -117,7 +119,9 @@
   background: var(--lego-yellow);
   padding: 8px 14px;
   border-radius: 999px;
-  box-shadow: 0 3px 0 #b45309, 0 4px 10px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 3px 0 #b45309,
+    0 4px 10px rgba(0, 0, 0, 0.18);
 }
 
 .quick-action-btn:hover {
@@ -318,6 +322,593 @@
 }
 
 /* ===================================================
+   SELECTOR DE USUARIO (Sprint 2, sin login)
+   =================================================== */
+.selector-empleado {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  max-width: 190px;
+  outline: none;
+}
+
+.selector-empleado option {
+  color: var(--text-main);
+}
+
+/* ===================================================
+   TARJETAS, BARRA DE HERRAMIENTAS Y CONTROLES
+   =================================================== */
+.card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toolbar-derecha {
+  margin-left: auto;
+}
+
+.input {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-main);
+  background: #ffffff;
+  border: 1.5px solid var(--border-light);
+  border-radius: 12px;
+  padding: 9px 12px;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--lego-red);
+  box-shadow: 0 0 0 3px rgba(229, 37, 33, 0.12);
+}
+
+.select {
+  width: auto;
+  min-width: 170px;
+  cursor: pointer;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.input-busqueda {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+}
+
+.input-busqueda svg {
+  position: absolute;
+  left: 12px;
+  color: var(--text-light);
+  pointer-events: none;
+}
+
+.input-busqueda .input {
+  padding-left: 36px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 9px 16px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primario {
+  background: var(--lego-red);
+  color: #ffffff;
+  box-shadow: 0 3px 0 var(--dark-red-btn);
+}
+
+.btn-primario:hover:not(:disabled) {
+  background: var(--lego-red-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secundario {
+  background: #ffffff;
+  color: var(--text-body);
+  border: 1.5px solid var(--border-light);
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background: var(--surface-subtle);
+}
+
+.btn-fantasma {
+  color: var(--text-body);
+}
+
+.btn-fantasma:hover:not(:disabled) {
+  background: var(--surface-subtle);
+  color: var(--lego-red);
+}
+
+.btn-peligro {
+  background: var(--dark-red-btn);
+  color: #ffffff;
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background: var(--dark-red-btn-hover);
+}
+
+.btn-chico {
+  font-size: 12.5px;
+  padding: 5px 10px;
+  border-radius: 9px;
+}
+
+.btn-icono {
+  display: inline-flex;
+  padding: 6px;
+  border-radius: 9px;
+  color: var(--text-muted);
+}
+
+.btn-icono:hover {
+  background: var(--surface-subtle);
+  color: var(--lego-red);
+}
+
+/* ===================================================
+   TABLAS
+   =================================================== */
+.tabla-contenedor {
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabla th {
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  background: var(--surface-subtle);
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: 11px 14px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-body);
+  vertical-align: middle;
+}
+
+.tabla .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabla .col-acciones {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabla-clickeable tbody tr {
+  cursor: pointer;
+}
+
+.tabla-clickeable tbody tr:hover td,
+.tabla-clickeable tbody tr:focus td {
+  background: var(--lego-red-soft);
+  outline: none;
+}
+
+.tabla-mensaje {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 28px 14px !important;
+}
+
+.fila-inactiva td {
+  color: var(--text-light);
+}
+
+.celda-motivo {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabla td.mono,
+.tabla td.nowrap {
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 13px;
+}
+
+.texto-secundario {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.paginacion-botones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ===================================================
+   INSIGNIAS DE ESTADO
+   =================================================== */
+.badge {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.badge-inline {
+  margin-left: 8px;
+}
+
+.badge-borrador,
+.badge-anulada,
+.badge-cancelada,
+.badge-inactivo {
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  border-color: var(--border-light);
+}
+
+.badge-pendiente,
+.badge-emitida {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fde68a;
+}
+
+.badge-aprobada,
+.badge-completada,
+.badge-activo {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.badge-rechazada,
+.badge-con-problemas {
+  background: var(--lego-red-soft);
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+/* ===================================================
+   ALERTAS
+   =================================================== */
+.alerta {
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid;
+}
+
+.alerta-error {
+  background: var(--lego-red-soft);
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.alerta-aviso {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #78350f;
+}
+
+.alerta-exito {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.lista-duplicados {
+  margin: 6px 0 6px 18px;
+}
+
+/* ===================================================
+   MODAL
+   =================================================== */
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px;
+  overflow-y: auto;
+  z-index: 200;
+}
+
+.modal {
+  background: var(--surface-card);
+  border-radius: 22px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-amplio {
+  max-width: 860px;
+}
+
+.modal-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.modal-titulo {
+  font-family: var(--font-brand);
+  font-size: 21px;
+}
+
+.titulo-con-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-cuerpo {
+  padding: 20px 22px;
+}
+
+.modal-pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border-light);
+  background: var(--surface-subtle);
+  border-radius: 0 0 22px 22px;
+  flex-wrap: wrap;
+}
+
+.pie-nota {
+  margin-right: auto;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.pie-izquierda {
+  margin-right: auto;
+}
+
+/* ===================================================
+   FORMULARIOS
+   =================================================== */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+}
+
+.form-columna {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-ancho-completo {
+  grid-column: 1 / -1;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo-etiqueta {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-body);
+}
+
+.obligatorio {
+  color: var(--lego-red);
+}
+
+.campo-con-error .input {
+  border-color: #f87171;
+}
+
+.campo-error {
+  font-size: 12.5px;
+  color: #b91c1c;
+}
+
+.input-cantidad {
+  width: 90px;
+  text-align: right;
+}
+
+.buscador-productos {
+  position: relative;
+}
+
+.resultados-productos {
+  list-style: none;
+  margin-top: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #ffffff;
+  box-shadow: var(--shadow-md);
+}
+
+.resultados-productos li {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.resultados-productos li:first-child {
+  border-top: none;
+}
+
+.resultados-productos li.texto-secundario {
+  padding: 10px 12px;
+}
+
+.resultados-productos button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--text-body);
+}
+
+.resultados-productos button:hover {
+  background: var(--lego-red-soft);
+  color: var(--lego-red);
+}
+
+/* ===================================================
+   DETALLE DE SOLICITUD
+   =================================================== */
+.datos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 18px;
+}
+
+.datos-grid dt {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+
+.datos-grid dd {
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.subtitulo {
+  font-family: var(--font-brand);
+  font-size: 17px;
+  margin-bottom: 10px;
+}
+
+.historial {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 3px solid var(--border-light);
+  padding-left: 14px;
+}
+
+.historial li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13.5px;
+}
+
+.historial-fecha {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  min-width: 130px;
+}
+
+.historial-comentario {
+  flex-basis: 100%;
+  color: var(--text-body);
+  font-style: italic;
+}
+
+/* ===================================================
    RESPONSIVE
    =================================================== */
 @media (max-width: 1080px) {
@@ -347,6 +938,19 @@
 @media (max-width: 640px) {
   .indicators-grid {
     grid-template-columns: 1fr;
+  }
+
+  .form-grid,
+  .datos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar-derecha {
+    margin-left: 0;
+  }
+
+  .lesgo-session-group .user-role-tag {
+    display: none;
   }
 
   .quick-action-btn span,
