@@ -49,7 +49,7 @@ cd frontend && cp .env.example .env && npm install && npm run dev
 - En DBeaver cualquiera puede hacer `SELECT` para revisar datos, pero **no se insertan ni modifican filas de `compras_*` a mano**: se usa la app o Swagger, para que apliquen validaciones, folios e historial.
 - Un cambio de esquema = un archivo nuevo numerado en `database/schema/` (nunca se edita uno ya ejecutado).
 - Ningún script ni test hace `DELETE`, `TRUNCATE` o `DROP` sobre datos existentes.
-- Solo se crean/modifican tablas con prefijo `compras_`. Las tablas de otros grupos (`rrhh_*`, `inv_*`, `log_*`) son de solo lectura.
+- Solo se crean/modifican tablas del schema `compras`. Las de otros grupos (schemas `inventario`, `logistica`, RRHH) son de solo lectura y siempre se escriben con su schema (`inventario.inv_producto`).
 - `synchronize` de TypeORM queda siempre en `false`: en `true` podría alterar tablas de la BD compartida.
 
 ### Contrato front ↔ back

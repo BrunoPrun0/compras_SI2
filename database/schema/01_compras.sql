@@ -1,6 +1,6 @@
 -- Módulo Compras: tablas propias (versión ya ejecutada en la BD compartida).
--- Las FK hacia rrhh_empleado e inv_producto se agregan en 03_fk_externas.sql
--- cuando esas tablas existan.
+-- Las FK hacia inv_producto se agregan en 03_inventario.sql y las de
+-- rrhh_empleado en un script posterior, cuando esas tablas existan.
 
 BEGIN;
 

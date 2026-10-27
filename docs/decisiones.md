@@ -10,10 +10,48 @@ Compras es dueño de: **proveedores, solicitudes de compra (SC) y órdenes de co
 | Maestro / tabla | Dueño | Qué hace Compras |
 |---|---|---|
 | `compras_proveedor` | Compras | CRUD + activar/desactivar |
-| `inv_producto` (catálogo) | Inventario | **Solo lectura**. Si existe la columna `inventariable`, se usa; si no, todo es inventariable |
+| `inv_producto` + `inv_temas` (catálogo) | Inventario | **Solo lectura**. Todos los productos son sets inventariables |
 | `rrhh_empleado`, `rrhh_usuario`, `rrhh_rol` | RRHH | **Solo lectura** (login y roles) |
-| `log_recepcion` | Logística | **Solo lectura**: de ahí sale si la recepción fue conforme |
-| Stock | Inventario | Nada. Compras no toca stock; solo expone OC emitidas y unidades en tránsito |
+| `log_recepcion` + `log_recepcion_detalle` | Logística | **Solo lectura**: de ahí sale la recepción de cada OC (verificación contra guía y OC) |
+| `inv_stock_bodega` | Inventario | **Solo lectura**: stock físico para mostrar junto al tránsito. Compras no toca stock |
+
+### 1.1 Correspondencia con las tablas de Inventario y Logística
+
+Estructura verificada en la BD compartida el 27/10/2026. Cada módulo tiene su propio schema:
+
+| Módulo | Schema |
+|---|---|
+| Compras (nuestras tablas `compras_*`) | `compras` |
+| Inventario (`inv_*`) | `inventario` |
+| Logística (`log_*`) | `logistica` |
+| RRHH (`rrhh_*`) | por confirmar |
+
+Toda referencia a tablas de otro módulo, en SQL y en las entidades de TypeORM (`@Entity({ schema: ... })`), va calificada con su schema (`inventario.inv_producto`, `logistica.log_recepcion`). Los scripts de `database/` empiezan con `SET LOCAL search_path TO compras;` dentro de la transacción.
+
+| Campo del contrato (`Producto`) | Origen |
+|---|---|
+| `idProducto` | `inv_producto.id_producto` |
+| `sku` | `inv_producto.sku` |
+| `nombre` | `inv_producto.nombre_set` |
+| `coleccion` | `inv_temas.nombre_tema` (vía `inv_producto.id_tema`) |
+| `cantPiezas` | `inv_producto.cant_piezas` |
+| `activo` | `inv_producto.activo` |
+| `precioReferencia` | Último `precio_unitario` pagado en una OC EMITIDA/COMPLETADA (Inventario no guarda precio); `null` si nunca se ha comprado |
+
+**Recepción de una OC** (Logística la registra, según el curso y nuestro BPMN; Compras solo la lee):
+- Una OC puede tener **varias recepciones** (`log_recepcion.id_oc` no es único: entregas parciales). Se evalúa siempre el **acumulado** de todas sus recepciones.
+- Cantidades por producto: `SUM(cantidad_recibida)` y `SUM(cantidad_danada)` de `log_recepcion_detalle` (`recepcion_id → log_recepcion.id`) sobre todas las recepciones de la OC.
+- **Conforme** si, en el acumulado, cada producto de la OC tiene recibida = pedida, dañada = 0 y no llegó nada que no se pidió → COMPLETADA. En cualquier otro caso → CON_PROBLEMAS, con el detalle de diferencias (faltantes, dañados con `motivo_dano`, `observacion`) en el comentario del historial.
+- Se reevalúan las OC en EMITIDA **y en CON_PROBLEMAS**: si una entrega posterior completa lo faltante, la OC pasa sola de CON_PROBLEMAS a COMPLETADA. Solo se escribe historial cuando el estado cambia.
+- `fecha_recepcion_real` = `MAX(log_recepcion.fecha_recepcion)` de sus recepciones al quedar COMPLETADA (sin zona; se interpreta en `America/Santiago`).
+- `log_recepcion.estado`: valores aún desconocidos (tabla vacía al 27/10/2026). Mientras tanto se procesan todas las recepciones, excepto las que tengan un estado listado en `RECEPCION_ESTADOS_IGNORADOS` (env, p. ej. `ANULADA`). Confirmar con Logística.
+- Después, Logística confirma el ingreso a Inventario (`inv_recepciones_compra` / `inv_movimiento`); Compras no participa en ese paso.
+
+**Stock físico** de un producto = `SUM(inv_stock_bodega.cantidad_disponible)` de todas las bodegas.
+
+**Pedidos pendientes a otros grupos:**
+- Logística: FK `log_recepcion.id_oc → compras_oc(id_oc)` (hoy no existe) y FK `log_recepcion_detalle.id_producto → inv_producto(id_producto)`; confirmar los valores de `log_recepcion.estado` (cuáles significan verificación terminada y cuáles anulada).
+- Inventario: FK `inv_recepciones_compra.id_oc → compras_oc(id_oc)` e `id_proveedor → compras_proveedor(id_proveedor)`.
 
 Compras **nunca** crea ni modifica tablas de otros módulos en la BD compartida.
 
@@ -44,7 +82,7 @@ BORRADOR ──emitir──▶ EMITIDA ──recepción conforme──▶ COMPLE
 - `EMITIDA` = en tránsito (cuenta para las unidades en tránsito, HU6.2).
 - OC emitida es **inmutable** (no se editan líneas ni cabecera).
 - `CANCELADA` reemplaza al "Rechazado" del BPMN.
-- Las transiciones EMITIDA → COMPLETADA / CON_PROBLEMAS las gatilla la recepción registrada por Logística en `log_recepcion`.
+- Las transiciones EMITIDA → COMPLETADA / CON_PROBLEMAS las gatilla la recepción registrada por Logística en `log_recepcion` (regla de conformidad en §1.1).
 
 Toda transición de SC u OC escribe una fila en `compras_historial_estado` **en la misma transacción**.
 
@@ -80,7 +118,7 @@ Los roles vienen de RRHH (`rrhh_rol`). El backend mapea los nombres de RRHH a es
 | `GESTOR_SC` | Ver todas las SC; aprobar/rechazar (no las propias) |
 | `COMPRADOR` | CRUD proveedores; ver SC; crear, emitir, cancelar y resolver OC; ver tránsito |
 | `INVENTARIO` | Ver OC emitidas y unidades en tránsito |
-| `ADMIN` | Todo lo anterior + historial de auditoría + simular recepción (solo si `log_recepcion` no existe) |
+| `ADMIN` | Todo lo anterior + historial de auditoría + forzar sincronización de recepciones |
 
 El analista de Power BI no usa la aplicación: se conecta a las vistas de solo lectura (RT3).
 
@@ -122,8 +160,7 @@ Fechas en ISO 8601. Montos como número (CLP, sin decimales en pantalla).
 | `GET /ordenes/:id/documento` | COMPRADOR, ADMIN | Datos para el documento imprimible (HU4.2) |
 | `GET /integracion/transito?idProducto=` | INVENTARIO, COMPRADOR, ADMIN | Unidades en tránsito por producto (Σ cantidades en OC EMITIDA) |
 | `GET /integracion/oc-emitidas` | INVENTARIO, ADMIN | OC EMITIDA con líneas, cantidades y fecha comprometida (HU6.1) |
-| `POST /integracion/recepciones/sincronizar` | ADMIN (también corre periódicamente) | Lee `log_recepcion` y actualiza OC |
-| `POST /integracion/recepciones/simular/:idOc` | ADMIN | `{conforme, observacion}`; solo si no existe `log_recepcion` |
+| `POST /integracion/recepciones/sincronizar` | ADMIN (también corre periódicamente) | Lee `log_recepcion` y actualiza las OC EMITIDA (§1.1) |
 | `GET /historial/:tipo/:id` | ADMIN | `tipo` = `SC` \| `OC` (HU5.2) |
 | `GET /panel/resumen` | autenticado | Contadores: SC pendientes, OC emitidas, OC con problemas, gasto del mes |
 
@@ -141,8 +178,8 @@ interface EmpleadoRef { idEmpleado: number; nombre: string }
 interface UsuarioActual extends EmpleadoRef { roles: Rol[] }
 
 interface Producto {
-  idProducto: number; sku: string; nombre: string; coleccion: string | null;
-  precioReferencia: number | null; inventariable: boolean; activo: boolean;
+  idProducto: number; sku: string; nombre: string; coleccion: string;
+  cantPiezas: number; activo: boolean; precioReferencia: number | null;
 }
 
 interface Proveedor {
@@ -188,7 +225,7 @@ interface HistorialItem {
 interface DuplicadoSc { idSolicitud: number; folio: string; estado: EstadoSc; producto: Producto; cantidad: number }
 // 409 SC_POSIBLE_DUPLICADO → details: { duplicados: DuplicadoSc[] }
 
-interface TransitoProducto { producto: Producto; cantidadEnTransito: number; ordenes: { folio: string; cantidad: number; fechaEntregaEsperada: Fecha }[] }
+interface TransitoProducto { producto: Producto; stockFisico: number; cantidadEnTransito: number; ordenes: { folio: string; cantidad: number; fechaEntregaEsperada: Fecha }[] }
 
 interface PanelResumen { scPendientes: number; ocEmitidas: number; ocConProblemas: number; gastoMesActual: number }
 
@@ -220,13 +257,13 @@ Vista táctica: cumplimiento y problemas por proveedor, SC pendientes por antig�
 | Sprint | Entrega | Alcance |
 |---|---|---|
 | 2 | 28/10 | Proveedores (form + listado), SC (crear/editar/enviar/listar/detalle), catálogo en lectura, seeds ≥ 10, validaciones V1–V3. Usuario actual por selector de empleado (sin login) |
-| 3 | 18/11 | Login con RRHH + roles (V11), aprobación/rechazo (V4–V6), OC completa (V7–V10), historial, integración con `log_recepcion`, unidades en tránsito |
+| 3 | 18/11 | Login con RRHH + roles (V11), aprobación/rechazo (V4–V6), OC completa (V7–V10), historial, integración con recepciones de Logística, unidades en tránsito |
 | 4 | 09/12 | OC imprimible, panel, ≥ 100 OC, vistas analíticas + usuario de solo lectura, Power BI, pruebas de integración documentadas |
 
 ## 9. Cambios pendientes en el informe (anteproyecto → Sprint 2/3)
 
 1. MER: agregar `compras_sc_detalle` y `compras_historial_estado`; mover la referencia a SC desde `compras_oc` a `compras_detalle.id_sc_detalle`; agregar `folio`, `fecha_recepcion_real`, `motivo_rechazo`, `motivo_cancelacion`; actualizar los estados.
-2. BPMN: "En tránsito" va **después de emitir/enviar** la OC, no después de la recepción; "Rechazado" pasa a "Cancelada"; Logística registra la recepción y avisa a Inventario.
+2. BPMN: "En tránsito" va **después de emitir/enviar** la OC, no después de la recepción; "Rechazado" pasa a "Cancelada"; Logística registra la recepción (`log_recepcion`), Compras actualiza el estado de la OC y Logística confirma el ingreso a Inventario.
 3. HU1.1 y HU1.2: reescribir como consulta del catálogo de Inventario (Compras no lo administra).
 4. HU6.3: reasignar a Logística/Inventario; para Compras queda "la OC actualiza su estado al registrarse la recepción".
 5. Corregir la nota "R02" (no existe ese ID; probablemente es RF2).
