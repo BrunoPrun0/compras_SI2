@@ -24,7 +24,9 @@ Estructura verificada en la BD compartida el 27/10/2026. Cada módulo tiene su p
 | Compras (nuestras tablas `compras_*`) | `compras` |
 | Inventario (`inv_*`) | `inventario` |
 | Logística (`log_*`) | `logistica` |
-| RRHH (`rrhh_*`) | por confirmar |
+| RRHH (`rrhh_*`) | `rrhh` (vacío al 27/10/2026, ver abajo) |
+
+**Empleados mientras RRHH no publique sus tablas:** el schema `rrhh` existe pero no tiene tablas. Mientras tanto el backend lee `logistica.test_log_rrhh_empleado` (ids 301–310, columnas `id_empleado`, `nombre`), configurable con `RRHH_EMPLEADO_TABLE` en `backend/.env`. Cuando RRHH publique `rrhh_empleado` se cambia esa variable (y, si cambian las columnas, solo `backend/src/auth/empleados.repository.ts`). Si RRHH usa otros ids, las SC/OC del seed quedarán apuntando a empleados inexistentes y habrá que conversarlo antes del script de FK del Sprint 3.
 
 Toda referencia a tablas de otro módulo, en SQL y en las entidades de TypeORM (`@Entity({ schema: ... })`), va calificada con su schema (`inventario.inv_producto`, `logistica.log_recepcion`). Los scripts de `database/` empiezan con `SET LOCAL search_path TO compras;` dentro de la transacción.
 
@@ -104,6 +106,15 @@ Todas se validan **en el servidor** (RT2). El front las repite solo para dar fee
 | V10 | OC emitida no se modifica | `OC_INMUTABLE` |
 | V11 | Endpoint sin el rol requerido → 403 | `SIN_PERMISO` |
 
+Códigos genéricos (fuera de las reglas): `VALIDACION` (400: body/query inválido, producto inexistente o repetido en una SC; `details.errores = [{campo, errores[]}]`), `NO_AUTENTICADO` (401), `NO_ENCONTRADO` (404), `CONFLICTO` (409), `ERROR_INTERNO` (500).
+Status por código de regla: 400 `PROVEEDOR_RUT_INVALIDO`, `SC_INCOMPLETA`, `SC_MOTIVO_RECHAZO_REQUERIDO`, `OC_LINEA_SIN_RESPALDO`, `OC_CANTIDAD_INVALIDA`, `OC_PRECIO_INVALIDO`, `OC_INCOMPLETA`; 403 `SIN_PERMISO`, `SC_AUTOAPROBACION`; 409 `PROVEEDOR_RUT_DUPLICADO`, `SC_POSIBLE_DUPLICADO`, `TRANSICION_INVALIDA`, `OC_LINEA_YA_USADA`, `OC_PROVEEDOR_INACTIVO`, `OC_INMUTABLE`.
+
+Precisiones de implementación (Sprint 2):
+- V1: el RUT se guarda normalizado (`76123456-0`, DV `K` en mayúscula); se acepta con o sin puntos/guion.
+- Una SC tiene **una línea por producto** (repetir un producto → `VALIDACION`). Los productos deben existir en el catálogo al crear/editar; que estén activos se exige al enviar (V2).
+- V2 (`SC_INCOMPLETA`) → `details: { faltantes: ('motivo'|'lineas')[], cantidadesInvalidas: number[], productosInactivos: number[], productosInexistentes: number[] }` (ids de producto).
+- Editar una SC que no está en BORRADOR → `TRANSICION_INVALIDA`; editar/enviar/anular una SC ajena → `SIN_PERMISO`.
+
 - IVA 19 % calculado en servidor: `subtotal = Σ líneas`, `impuesto = round(subtotal × 0,19)`, `total = subtotal + impuesto`.
 - Folios: `SC-AAAA-NNNNN` y `OC-AAAA-NNNNN` (año + id con ceros a la izquierda), asignados por el backend.
 - Proveedor desactivado conserva su historial (no se borra nada; no hay DELETE físico de proveedores, SC ni OC).
@@ -124,7 +135,7 @@ El analista de Power BI no usa la aplicación: se conecta a las vistas de solo l
 
 ## 5. Contrato de la API REST
 
-Base: `/api`. JSON. Autenticación con `Authorization: Bearer <jwt>`.
+Base: `/api`. JSON. Autenticación con `Authorization: Bearer <jwt>` (Sprint 3). En Sprint 2 (`AUTH_MODE=dev`) el usuario actual va en el header `X-Empleado-Id: <idEmpleado>` y tiene los roles SOLICITANTE + COMPRADOR; sin header (o con un id inexistente) → 401 `NO_AUTENTICADO`.
 Errores: `{ "statusCode": 400, "code": "SC_INCOMPLETA", "message": "texto para el usuario", "details": {...} }`.
 Listados paginados: `?page=1&pageSize=20` → `{ "items": [...], "total": 123, "page": 1, "pageSize": 20 }`.
 Fechas en ISO 8601. Montos como número (CLP, sin decimales en pantalla).
@@ -133,18 +144,18 @@ Fechas en ISO 8601. Montos como número (CLP, sin decimales en pantalla).
 |---|---|---|
 | `POST /auth/login` | público | `{usuario, password}` → `{token, usuario: {idEmpleado, nombre, roles[]}}` |
 | `GET /auth/me` | autenticado | Usuario actual y roles |
-| `GET /catalogo/productos?q=&soloActivos=true` | autenticado | Catálogo (lectura de `inv_producto`) |
-| `GET /empleados?q=` | autenticado (en Sprint 2, público) | Lectura de `rrhh_empleado` para el selector de usuario y los filtros por solicitante |
+| `GET /catalogo/productos?q=&soloActivos=true&page=&pageSize=` | autenticado | Catálogo (lectura de `inv_producto`) → `Paginado<Producto>`; `q` busca en nombre, SKU y colección |
+| `GET /empleados?q=` | autenticado (en Sprint 2, público) | Lectura de `rrhh_empleado` para el selector de usuario y los filtros por solicitante → `EmpleadoRef[]` (máx. 50) |
 | `GET /proveedores?q=&estado=` | COMPRADOR, GESTOR_SC, ADMIN | Listado |
-| `GET /proveedores/:id` | ídem | Detalle + resumen de OC |
+| `GET /proveedores/:id` | ídem | Detalle + resumen de OC → `ProveedorDetalle` |
 | `POST /proveedores` | COMPRADOR, ADMIN | Crear (V1) |
 | `PATCH /proveedores/:id` | COMPRADOR, ADMIN | Editar datos |
 | `PATCH /proveedores/:id/estado` | COMPRADOR, ADMIN | `{estado: "ACTIVO" \| "INACTIVO"}` |
 | `GET /solicitudes?estado=&idSolicitante=&idProducto=&desde=&hasta=&q=` | autenticado (SOLICITANTE ve solo las suyas) | Listado con filtros (HU2.3, HU5.1) |
 | `GET /solicitudes/:id` | dueño, GESTOR_SC, COMPRADOR, ADMIN | Cabecera + líneas + historial |
-| `GET /solicitudes/duplicados?productos=1,2` | autenticado | SC PENDIENTE/APROBADA-sin-OC que incluyen esos productos (V3) |
-| `POST /solicitudes` | autenticado | Crea en BORRADOR: `{motivo?, lineas: [{idProducto, cantidad}]}` |
-| `PATCH /solicitudes/:id` | dueño | Edita (solo BORRADOR) |
+| `GET /solicitudes/duplicados?productos=1,2` | autenticado | SC PENDIENTE/APROBADA-sin-OC que incluyen esos productos (V3) → `DuplicadoSc[]` |
+| `POST /solicitudes` | autenticado | Crea en BORRADOR: `{motivo?, lineas: [{idProducto, cantidad}], confirmarDuplicado?}` (V3) → 201 `SolicitudDetalle` |
+| `PATCH /solicitudes/:id` | dueño | Edita (solo BORRADOR): `{motivo?, lineas?}`; si viene `lineas`, reemplaza el conjunto completo |
 | `POST /solicitudes/:id/enviar` | dueño | BORRADOR → PENDIENTE (V2, V3; body `{confirmarDuplicado?}`) |
 | `POST /solicitudes/:id/anular` | dueño, ADMIN | → ANULADA |
 | `POST /solicitudes/:id/aprobar` | GESTOR_SC | → APROBADA (V5) |
@@ -168,6 +179,7 @@ Fechas en ISO 8601. Montos como número (CLP, sin decimales en pantalla).
 
 Front (tipos en `frontend/src/types/`) y back (DTOs de respuesta) usan exactamente estos nombres.
 Fechas: `Fecha` = `"AAAA-MM-DD"`; `FechaHora` = ISO 8601 con zona (`"2026-10-26T14:30:00-03:00"`). Zona horaria del sistema: `America/Santiago`.
+En BD, los `timestamp` de `compras_*` se guardan en **UTC** (la BD está en GMT y se escriben con `now()`); el backend los convierte a hora de Chile. Los filtros `desde`/`hasta` son días en hora de Chile, ambos inclusive.
 
 ```ts
 type EstadoSc = 'BORRADOR' | 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'ANULADA';
@@ -187,7 +199,15 @@ interface Proveedor {
   telefono: string | null; direccion: string | null; estado: 'ACTIVO' | 'INACTIVO';
 }
 
-interface LineaSc { idScDetalle: number; producto: Producto; cantidad: number; folioOc: string | null }
+interface ProveedorDetalle extends Proveedor {   // GET /proveedores/:id
+  resumenOc: {
+    cantidadPorEstado: Record<EstadoOc, number>;  // todas las claves presentes (0 si no hay)
+    montoComprado: number;                        // Σ total de OC EMITIDA/COMPLETADA
+    ultimaEmision: FechaHora | null;
+  };
+}
+
+interface LineaSc { idScDetalle: number; producto: Producto; cantidad: number; folioOc: string | null }  // folioOc: OC no cancelada (incluye BORRADOR)
 
 interface SolicitudResumen {
   idSolicitud: number; folio: string; solicitante: EmpleadoRef; fechaSolicitud: FechaHora;
