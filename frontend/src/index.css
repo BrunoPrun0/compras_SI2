@@ -1,0 +1,71 @@
+:root {
+  /* Paleta LESGO ERP (coherente con la identidad visual del E-commerce) */
+  --lego-red: #e52521;
+  --lego-red-hover: #cc1f1c;
+  --lego-red-soft: #fef2f2;
+  --lego-yellow: #ffd500;
+  --lego-yellow-dark: #d4a000;
+  --dark-red-btn: #881337;
+  --dark-red-btn-hover: #70102e;
+
+  /* Fondos y superficies */
+  --bg-page: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-subtle: #f1f5f9;
+  --surface-muted: #e2e8f0;
+
+  /* Tipografía */
+  --text-main: #0f172a;
+  --text-body: #334155;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+
+  /* Bordes y sombras */
+  --border-light: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 28px -6px rgba(15, 23, 42, 0.08);
+
+  /* Tipografías */
+  --font-brand: 'Fredoka', cursive, sans-serif;
+  --font-ui: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-page);
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
