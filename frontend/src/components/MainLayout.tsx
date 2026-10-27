@@ -5,13 +5,23 @@ import type { ViewId } from '../types/navigation';
 interface MainLayoutProps {
   currentView: ViewId;
   onNavigate: (view: ViewId) => void;
+  onNuevaSolicitud: () => void;
   children: ReactNode;
 }
 
-export function MainLayout({ currentView, onNavigate, children }: MainLayoutProps) {
+export function MainLayout({
+  currentView,
+  onNavigate,
+  onNuevaSolicitud,
+  children,
+}: MainLayoutProps) {
   return (
     <div className="app-wrapper">
-      <Navbar currentView={currentView} onNavigate={onNavigate} />
+      <Navbar
+        currentView={currentView}
+        onNavigate={onNavigate}
+        onNuevaSolicitud={onNuevaSolicitud}
+      />
       <main className="main-content">{children}</main>
     </div>
   );
