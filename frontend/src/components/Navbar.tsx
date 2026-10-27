@@ -1,4 +1,5 @@
-import { LogOut, Plus, User } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { SelectorEmpleado } from './SelectorEmpleado';
 import type { NavItem, ViewId } from '../types/navigation';
 
 // Estructura de navegación del módulo: fácil de ampliar cuando se definan nuevas vistas.
@@ -14,9 +15,10 @@ const NAV_ITEMS: NavItem[] = [
 interface NavbarProps {
   currentView: ViewId;
   onNavigate: (view: ViewId) => void;
+  onNuevaSolicitud: () => void;
 }
 
-export function Navbar({ currentView, onNavigate }: NavbarProps) {
+export function Navbar({ currentView, onNavigate, onNuevaSolicitud }: NavbarProps) {
   return (
     <header className="lesgo-header">
       {/* Espigas / dientes inferiores de Lego */}
@@ -50,28 +52,14 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
         </ul>
       </nav>
 
-      {/* Acceso destacado y sesión de usuario (datos de demostración) */}
+      {/* Acceso rápido y usuario actual (Sprint 2: selector de empleado, sin login) */}
       <div className="lesgo-session-group">
-        <button
-          type="button"
-          className="quick-action-btn"
-          title="Acceso rápido de ejemplo (plantilla, sin acción real)"
-        >
+        <button type="button" className="quick-action-btn" onClick={onNuevaSolicitud}>
           <Plus size={16} strokeWidth={2.4} />
           <span>Nueva solicitud</span>
         </button>
 
-        <div className="user-session-badge" title="Usuario de demostración">
-          <User size={15} />
-          <span>Diego Parga</span>
-          <span className="user-role-tag">COMPRADOR</span>
-          <span className="demo-tag">DEMO</span>
-        </div>
-
-        <button type="button" className="logout-nav-btn" title="Cerrar sesión (plantilla, sin acción real)">
-          <LogOut size={14} />
-          <span>Salir</span>
-        </button>
+        <SelectorEmpleado />
       </div>
     </header>
   );
