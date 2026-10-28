@@ -4,6 +4,7 @@ import { DataSource, EntityManager } from 'typeorm';
 import { EmpleadosRepository } from '../auth/empleados.repository';
 import { puedeVerTodo, UsuarioAutenticado } from '../auth/roles';
 import { ProductoDto } from '../catalogo/producto.dto';
+import { patronContiene } from '../common/busqueda';
 import { ErrorDominio, noEncontrado, sinPermiso } from '../common/errores';
 import { aFechaHora, sqlFinDiaLocal, sqlInicioDiaLocal } from '../common/fechas';
 import { generarFolio } from '../common/folios';
@@ -61,7 +62,7 @@ export class SolicitudesService {
       qb.andWhere(`sc.fecha_solicitud >= ${sqlInicioDiaLocal('desde')}`, { desde: q.desde });
     if (q.hasta) qb.andWhere(`sc.fecha_solicitud < ${sqlFinDiaLocal('hasta')}`, { hasta: q.hasta });
     if (q.q?.trim())
-      qb.andWhere('(sc.folio ILIKE :q OR sc.motivo ILIKE :q)', { q: `%${q.q.trim()}%` });
+      qb.andWhere('(sc.folio ILIKE :q OR sc.motivo ILIKE :q)', { q: patronContiene(q.q.trim()) });
 
     const [filas, total] = await qb
       .orderBy('sc.fecha_solicitud', 'DESC')

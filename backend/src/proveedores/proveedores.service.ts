@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, QueryFailedError, Repository } from 'typeorm';
+import { patronContiene } from '../common/busqueda';
 import { ErrorDominio, noEncontrado } from '../common/errores';
 import { aFechaHora } from '../common/fechas';
 import { Paginado, saltar } from '../common/paginacion.dto';
@@ -28,8 +29,8 @@ export class ProveedoresService {
     const texto = q.q?.trim();
     if (texto) {
       qb.andWhere('(p.razon_social ILIKE :q OR p.rut_nit ILIKE :rut)', {
-        q: `%${texto}%`,
-        rut: `%${texto.replace(/[.\s]/g, '')}%`,
+        q: patronContiene(texto),
+        rut: patronContiene(texto.replace(/[.\s]/g, '')),
       });
     }
     const [filas, total] = await qb

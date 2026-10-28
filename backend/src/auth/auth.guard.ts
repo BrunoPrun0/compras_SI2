@@ -10,6 +10,7 @@ import { CLAVE_PUBLICO, CLAVE_ROLES, Rol, UsuarioAutenticado } from './roles';
 /** Roles que asume el modo dev (Sprint 2, sin login). */
 export const ROLES_MODO_DEV: Rol[] = ['SOLICITANTE', 'COMPRADOR'];
 export const HEADER_EMPLEADO = 'x-empleado-id';
+const MAX_INT_PG = 2_147_483_647;
 
 /**
  * Guard global: autentica y valida el rol en cada endpoint (RT2, V11).
@@ -58,13 +59,17 @@ export class AuthGuard implements CanActivate {
         'El login con RRHH aún no está disponible (Sprint 3)',
       );
     }
-    const valor = req.header(HEADER_EMPLEADO);
-    const id = Number(valor);
-    if (!valor || !Number.isInteger(id) || id <= 0) {
+    // Solo dígitos: Number() aceptaría "1e2", "0x12" o " 3 ". Tope de INT de Postgres.
+    const valor = req.header(HEADER_EMPLEADO) ?? '';
+    const id = /^\d{1,10}$/.test(valor) ? Number(valor) : 0;
+    if (!valor) {
       throw new ErrorDominio(
         'NO_AUTENTICADO',
         'Falta el header X-Empleado-Id (selecciona un usuario)',
       );
+    }
+    if (id <= 0 || id > MAX_INT_PG) {
+      throw new ErrorDominio('NO_AUTENTICADO', `X-Empleado-Id inválido: "${valor}"`);
     }
     const empleado = await this.empleados.porId(id);
     if (!empleado) throw new ErrorDominio('NO_AUTENTICADO', `El empleado ${id} no existe`);

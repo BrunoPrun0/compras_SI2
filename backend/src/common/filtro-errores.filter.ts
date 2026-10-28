@@ -60,6 +60,10 @@ export class FiltroErrores implements ExceptionFilter {
           details: { restriccion: pg.constraint },
         };
       }
+      // 22003: número fuera de rango (p. ej. un id mayor que INT en la ruta, query o body)
+      if (pg.code === '22003') {
+        return { statusCode: 400, code: 'VALIDACION', message: 'Número fuera de rango' };
+      }
       if (pg.code === '23503' || pg.code === '23514') {
         return {
           statusCode: 400,

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
+import { patronContiene } from '../common/busqueda';
 import type { Entorno } from '../common/config';
 import type { EmpleadoRef } from './roles';
 
@@ -25,11 +26,12 @@ export class EmpleadosRepository {
   }
 
   async buscar(q?: string, limite = 50): Promise<EmpleadoRef[]> {
+    const texto = q?.trim() || null;
     const filas: { id_empleado: number; nombre: string }[] = await this.ds.query(
       `SELECT id_empleado, nombre FROM ${this.tabla}
-       WHERE $1::text IS NULL OR nombre ILIKE '%' || $1 || '%' OR id_empleado::text = $1
-       ORDER BY nombre LIMIT $2`,
-      [q?.trim() || null, limite],
+       WHERE $1::text IS NULL OR nombre ILIKE $2 OR id_empleado::text = $1
+       ORDER BY nombre LIMIT $3`,
+      [texto, texto && patronContiene(texto), limite],
     );
     return filas.map(aRef);
   }
