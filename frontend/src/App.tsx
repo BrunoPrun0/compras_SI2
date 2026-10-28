@@ -11,7 +11,7 @@ import type { ViewId } from './types/navigation';
 import './App.css';
 
 // Vistas que llaman a la API y por lo tanto necesitan un usuario seleccionado.
-const VISTAS_CON_USUARIO: ViewId[] = ['solicitudes', 'proveedores', 'catalogo'];
+const VISTAS_CON_USUARIO: ViewId[] = ['panel', 'solicitudes', 'proveedores', 'catalogo'];
 
 function Contenido() {
   const { empleado } = useSesion();
