@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
 import type { CatalogoQuery, ProductoDto } from '../../catalogo/producto.dto';
+import { patronContiene } from '../../common/busqueda';
 import { Paginado, saltar } from '../../common/paginacion.dto';
 import { ProductoInv } from './inventario.entities';
 
@@ -32,7 +33,7 @@ export class ProductosInventarioService {
     if (q.soloActivos) qb.andWhere('p.activo = true');
     if (q.q?.trim()) {
       qb.andWhere('(p.nombre_set ILIKE :q OR p.sku ILIKE :q OR t.nombre_tema ILIKE :q)', {
-        q: `%${q.q.trim()}%`,
+        q: patronContiene(q.q.trim()),
       });
     }
     const total = await qb.getCount();
