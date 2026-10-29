@@ -1,14 +1,7 @@
-# Revisión crítica del flujo de Compras
+# Trabajo futuro y correcciones.
+---
 
-Revisión del 27/10/2026 sobre `main` (commit `73fb040`, con cambios locales sin commitear en `backend/.env.example`). Se cruzaron:
-
-- **BD**: `database/schema/01–03` y `database/seeds/01_seed_compras.sql`.
-- **Backend**: `backend/src`, en especial `solicitudes/`, `ordenes/`, `historial/`, `auth/` y `common/`.
-- **Especificación**: `docs/decisiones.md`, que el propio proyecto declara fuente única de verdad.
-
-`docs/anteproyecto/` y `docs/diagramas/` están vacíos (solo `.gitkeep`), así que no se pudo comparar contra el BPMN ni el MER originales. Lo que se dice de ellos sale de `decisiones.md` §9.
-
-Lo que no se puede confirmar en el código está marcado como **[Supuesto]**.
+En este documento se establece trabajo futuro para corregir bugs o deuda técnica.
 
 ---
 
@@ -16,25 +9,24 @@ Lo que no se puede confirmar en el código está marcado como **[Supuesto]**.
 
 ### 1.1 Estados
 
+READY -> R
+TO DO -> TD
+HALF DONE -> HD
+
 | Estado | BD (CHECK final) | Backend (`ESTADOS_*`) | Máquina / servicio | `decisiones.md` | Observación |
 |---|---|---|---|---|---|
-| SC `BORRADOR`, `PENDIENTE`, `ANULADA` | ✅ | ✅ | ✅ implementado | ✅ | OK |
-| SC `APROBADA`, `RECHAZADA` | ✅ | ✅ | ⚠️ en `MAQUINA_SC`, **sin endpoint ni método de servicio** | ✅ | Hoy solo se llega a estos estados por el seed. `backend/src/aprobaciones/` está vacío |
-| OC `BORRADOR` … `CANCELADA` | ✅ | ✅ (solo el tipo) | ❌ no hay `MAQUINA_OC`, servicio ni controlador | ✅ | `OrdenesModule` solo registra entidades ("Endpoints en Sprint 3") |
-| OC `EN_RECEPCION` | eliminado en 02 | ❌ | ❌ | ❌ | Correcto. Ojo: 02 no migra filas existentes con ese estado, solo asume que no hay (ver §4.6) |
-| "En tránsito" / "Rechazado" (BPMN del anteproyecto) | ❌ | ❌ | ❌ | Reemplazados por `EMITIDA` / `CANCELADA` | Falta actualizar el BPMN del informe (§9 de decisiones) |
+| SC `BORRADOR`, `PENDIENTE`, `ANULADA` |  | R | R | R | OK |
+| SC `APROBADA`, `RECHAZADA` | R | R | HD **sin endpoint ni servicio** | ✅ | Hoy solo se llega a estos estados por el seed. `backend/src/aprobaciones/` está vacío |
+| OC `BORRADOR` … `CANCELADA` | R | R | TD no hay `MAQUINA_OC`, servicio ni controlador | R | `OrdenesModule` solo registra entidades ("Endpoints en Sprint 3") |
 
 ### 1.2 Reglas y datos
 
 1. **Precio unitario: `> 0` vs `>= 0`.** V8 exige `precio > 0` (`OC_PRECIO_INVALIDO`), pero la BD tiene `CHECK (precio_unitario >= 0)`. La BD acepta OC con líneas a precio 0.
 2. **ADMIN "puede todo" vs la máquina de estados.** `decisiones.md` §4 dice que ADMIN tiene "todo lo anterior", pero `MAQUINA_SC.aprobar/rechazar` solo admite `GESTOR_SC`, y el test `sc.maquina.spec.ts` ("sin GESTOR_SC no se aprueba (ni siendo COMPRADOR o ADMIN)") confirma que ADMIN **no** aprueba. Hay que decidir cuál de las dos manda y corregir la otra.
 3. **Semántica de `fecha_solicitud`.** Se fija al **crear el borrador** (`DEFAULT now()`), no al enviar. La API la expone como `fechaSolicitud`, y en el listado aparece con la fecha del borrador. El KPI de tiempo de ciclo usa el historial (→ PENDIENTE), así que el cálculo es correcto, pero la columna engaña. Conviene renombrarla a `fecha_creacion` (como en la OC) o agregar `fecha_envio`.
-4. **Contrato de API vs implementación.** Están en `decisiones.md` §5 pero no existen: `POST /solicitudes/:id/aprobar|rechazar`, `GET /solicitudes/lineas-disponibles`, todo `/ordenes`, `/integracion/*`, `/historial/:tipo/:id`, `/panel/resumen`, `/auth/login` y `/auth/me`. Es esperable por el plan de sprints, pero el frontend no debe asumirlos.
-5. **Variables de entorno sin leer.** `.env.example` define `JWT_SECRET`, `JWT_EXPIRES_IN`, `ROLES_MAP`, `RECEPCIONES_SYNC_MINUTOS` y `RECEPCION_ESTADOS_IGNORADOS`, pero `validarEntorno` (`common/config.ts`) no las lee ni las valida. Además, el cambio local a `.env.example` borró `DB_POOL_MAX`.
-6. **Los scripts 01 y 02 no fijan el schema.** `decisiones.md` §1.1 dice que todos los scripts empiezan con `SET LOCAL search_path TO compras;`, pero solo 03 lo hace. Si 01/02 se reejecutan con otro `search_path`, las tablas quedan en `public`. **[Supuesto]**: en la BD compartida quedaron en `compras`, porque el seed y las entidades usan `compras.` y funcionan.
-7. **Autor de las transiciones automáticas.** `compras_historial_estado.id_empleado` es `NOT NULL`, pero `EMITIDA → COMPLETADA / CON_PROBLEMAS` la dispara la sincronización, no una persona. El seed usa el empleado 304 ("Operador de Recepción y Despacho"), que en el mismo seed también es solicitante de S04 y S10. **[Supuesto]**: no está definido si el actor será el `id_empleado` de quien registró `log_recepcion`, un usuario técnico o el ADMIN que forzó la sincronización.
-8. **Montos que excluyen `CON_PROBLEMAS`.** `montoComprado` del proveedor, `precioReferencia` y el KPI de gasto solo cuentan OC `EMITIDA` / `COMPLETADA`. Una OC con problemas sigue siendo gasto comprometido y un precio pagado, así que su monto desaparece de los indicadores mientras no se resuelva.
-9. **Tránsito.** "Σ cantidades en OC EMITIDA" no descuenta recepciones parciales y no cuenta lo pendiente de las OC `CON_PROBLEMAS`. Esto sobrestima unas veces y subestima otras.
+4. **Variables de entorno sin leer.** `.env.example` define `JWT_SECRET`, `JWT_EXPIRES_IN`, `ROLES_MAP`, `RECEPCIONES_SYNC_MINUTOS`, pero `validarEntorno` (`common/config.ts`) no las lee ni las valida.
+5. **Montos que excluyen `CON_PROBLEMAS`.** `montoComprado` del proveedor, `precioReferencia` y el KPI de gasto solo cuentan OC `EMITIDA` / `COMPLETADA`. Una OC con problemas sigue siendo gasto comprometido y un precio pagado, así que su monto desaparece de los indicadores mientras no se resuelva.
+6. **Tránsito.** "Σ cantidades en OC EMITIDA" no descuenta recepciones parciales y no cuenta lo pendiente de las OC `CON_PROBLEMAS`. Esto sobrestima unas veces y subestima otras.
 
 ---
 
@@ -129,68 +121,16 @@ CHECK (estado_nuevo NOT IN ('RECHAZADA','CANCELADA','CON_PROBLEMAS') OR comentar
 - **`TIMESTAMP` sin zona guardando UTC por convención.** Funciona mientras todos escriban con `now()` en una BD en GMT. Cualquier `INSERT` manual con hora local (o Power BI leyendo sin convertir) mezcla zonas. `TIMESTAMPTZ` elimina el problema.
 - **`chk_oc_fecha_entrega` compara contra `fecha_emision::date` en UTC.** Una OC emitida después de las 21:00 (horario de verano, UTC−3) o de las 20:00 (invierno, UTC−4) en Chile cae en el día UTC siguiente, así que la BD rechaza una entrega "para hoy" que V9 sí permite. Se corrige con `(fecha_emision AT TIME ZONE 'UTC' AT TIME ZONE 'America/Santiago')::date`, o usando `TIMESTAMPTZ`.
 - **`folio` es nullable.** Se rellena con un segundo `UPDATE` en la misma transacción. Una secuencia o trigger `BEFORE INSERT` permitiría `NOT NULL`.
-
-### 4.6 Scripts
-
-- `02_ajustes_estados.sql` asume que no hay filas en `EN_RECEPCION`. Si existieran, el `ADD CONSTRAINT` falla y la transacción entera se revierte, lo cual es seguro pero obliga a correr un `UPDATE` previo que el script no incluye.
-- 01 y 02 no son idempotentes (`CREATE TABLE` / `ADD COLUMN` sin `IF NOT EXISTS`). Está documentado ("ejecutar una sola vez"), pero en una BD compartida conviene un registro de migraciones aplicadas.
-
 ---
 
-## 5. Riesgos
-
-### 5.1 Seguridad y permisos
-
-1. **🔴 Credenciales en `backend/.env.example` (cambio local sin commitear).** El working tree reemplaza los placeholders por host, usuario y contraseña de la BD compartida (Neon), y borra el comentario "Nunca subir el .env al repo". Si se commitea, las credenciales quedan públicas en el historial de GitHub. Hay que revertir ese archivo antes de cualquier commit. Si ya se compartió por otro medio público, hay que rotar la contraseña.
-2. **Suplantación en modo dev.** `X-Empleado-Id` permite actuar como cualquier empleado, y `GET /empleados` es público y lista los ids. Es aceptable en Sprint 2, pero `AUTH_MODE=dev` no debe llegar a ningún despliegue accesible. Conviene que el backend se niegue a arrancar en dev si `NODE_ENV=production`.
-3. **En modo dev todos son COMPRADOR**, y `COMPRADOR ∈ ROLES_VEN_TODAS`. Cualquier usuario ve todas las SC, así que la regla "SOLICITANTE ve solo las suyas" no se puede probar en Sprint 2.
-4. **`GET /solicitudes/duplicados`** (rol SOLICITANTE) devuelve folio, estado y cantidades de SC de **otros** empleados. Es una fuga menor, pero contradice "solo ve las suyas".
-5. **Datos del proveedor editables después de emitir.** Se puede cambiar el RUT o la razón social de un proveedor con OC emitidas, y el documento imprimible (`GET /ordenes/:id/documento`) mostraría los datos nuevos. Falta guardar una copia (snapshot) de los datos del proveedor en la OC, o bloquear la edición.
-
-### 5.2 Validaciones
+### 5.1 Validaciones
 
 1. **V3 se valida fuera de la transacción en `crear()`.** La validación de líneas y la de duplicados ocurren antes de `ds.transaction`. Como V3 es solo advertencia, el impacto es bajo, pero el patrón no debe copiarse a V7.
 2. **V2 no revalida el producto al aprobar ni al emitir.** Un producto que Inventario desactiva después del envío pasa igual. **[Supuesto]**: no está definido si emitir una OC exige productos activos.
 3. **Errores de restricción genéricos.** Las violaciones de CHECK (`23514`) se devuelven como `VALIDACION` con el nombre de la restricción. Si una regla vive solo en la BD (por ejemplo, el nuevo `chk_oc_fecha_entrega`), el usuario recibe "Datos inconsistentes" en vez del código de negocio (`OC_INCOMPLETA`).
 
-### 5.3 Concurrencia
+### 5.2 Concurrencia
 
 1. **V7 sin bloqueo.** Dos compradores que crean o emiten OC con la misma línea de SC al mismo tiempo pasan ambos la validación. Hay que bloquear las filas de `compras_sc_detalle` involucradas (`SELECT … FOR UPDATE`) dentro de la transacción de emisión, además de la restricción en BD de §4.2.
 2. **Sincronización vs acciones manuales.** El job periódico, `POST /integracion/recepciones/sincronizar` (ADMIN) y `cancelar` / `resolver` pueden tocar la misma OC a la vez. Cada evaluación debe tomar `FOR UPDATE` sobre la OC y releer su estado. Si hay más de una instancia del backend, el job necesita un `pg_try_advisory_lock` para no correr dos veces y duplicar historial.
 3. **SC: bien resuelto.** `bloquear()` usa `pessimistic_write` sobre la cabecera, lo que serializa editar, enviar y anular. Hay que replicar el mismo patrón en aprobar, rechazar y en toda la OC.
-
----
-
-## 6. Mejoras priorizadas
-
-### 🔴 Alta
-
-1. Revertir las credenciales reales de `backend/.env.example` antes de commitear, y rotar la contraseña si llegaron a un lugar público.
-2. Implementar `aprobar` / `rechazar` de SC (endpoint + servicio con `id_gestor`, `fecha_resolucion`, `motivo_rechazo`, V4, V5 e historial) y un modo dev que permita elegir roles, incluidos `GESTOR_SC` y `ADMIN`.
-3. Implementar la máquina de estados de la OC (`MAQUINA_OC`) reutilizando `validarTransicion`, con bloqueo `FOR UPDATE` de la OC **y** de las líneas de SC en emitir (V7).
-4. Resolver la contradicción V7/V8 sobre el saldo de línea de SC: permitir varias OC por línea hasta la cantidad solicitada, o prohibir cantidades parciales.
-5. Restricciones de BD para reglas de dinero e identidad: `precio_unitario > 0`, `total = subtotal + impuesto`, `motivo_cancelacion` obligatorio en CANCELADA, `UNIQUE (id_solicitud, id_producto)`, coherencia de `id_producto` entre línea de OC y línea de SC.
-6. Definir quién figura como `id_empleado` en las transiciones automáticas, y qué `fecha_recepcion_real` se guarda al resolver a mano.
-7. Bloquear `EMITIDA → CANCELADA` si ya hay recepciones registradas.
-
-### 🟠 Media
-
-1. Aprobación de OC por monto (umbral configurable + rol aprobador) y segregación comprador ≠ solicitante.
-2. Corregir `chk_oc_fecha_entrega` para comparar en hora de Chile, o migrar a `TIMESTAMPTZ`.
-3. Índices: `compras_detalle (id_producto)`, `compras_oc (id_empleado)`, `compras_sc (id_gestor)`, historial por `(tipo_documento, estado_nuevo, fecha)`.
-4. Motivo obligatorio al anular una SC. Auditoría de cambios de proveedor y de ediciones de borradores.
-5. Incluir `CON_PROBLEMAS` en gasto comprometido y `precioReferencia`, y descontar recepciones parciales del tránsito.
-6. Validar en el historial los estados por tipo de documento y exigir comentario en RECHAZADA / CANCELADA / CON_PROBLEMAS.
-7. Agregar `SET LOCAL search_path TO compras;` a 01 y 02 (o un comentario que explique por qué no se modifican), y llevar un registro de scripts aplicados.
-8. Unificar la definición del rol ADMIN entre `decisiones.md` §4 y `MAQUINA_SC`.
-
-### 🟢 Baja
-
-1. Estado o vista derivada de la SC aprobada (`EN_OC` / `CERRADA`) y cierre manual de SC aprobadas sin uso.
-2. Flujo de devolución al proveedor y ajuste de montos de OC resueltas con faltantes.
-3. Alertas de SC pendientes antiguas y OC con entrega vencida.
-4. Renombrar `fecha_solicitud` a `fecha_creacion` o agregar `fecha_envio`.
-5. Snapshot de los datos del proveedor en la OC emitida.
-6. `folio NOT NULL` mediante secuencia o trigger.
-7. Leer y validar en `validarEntorno` las variables que ya están en `.env.example`.
-8. Restringir `GET /solicitudes/duplicados` para no exponer detalles de SC ajenas a un SOLICITANTE.

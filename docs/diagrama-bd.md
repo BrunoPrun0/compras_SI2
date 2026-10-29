@@ -165,4 +165,6 @@ erDiagram
 | `compras_historial_estado` | `CHECK tipo_documento IN (SC, OC)` | 01 |
 | Índices | `idx_compras_sc_estado`, `idx_compras_sc_empleado`, `idx_compras_sc_det_solicitud`, `idx_compras_sc_det_producto`, `idx_compras_oc_estado`, `idx_compras_oc_proveedor`, `idx_compras_det_oc`, `idx_compras_det_sc_detalle`, `idx_compras_hist_documento (tipo_documento, id_documento)` | 02 |
 
-Ninguna FK declara `ON DELETE` ni `ON UPDATE`, así que todas quedan en `NO ACTION`. Las restricciones que faltan están en [feedback-flujo.md](feedback-flujo.md).
+
+En [MR.png](diagramas/MR.png) se puede observar el diagrama con mayor resolución.
+
