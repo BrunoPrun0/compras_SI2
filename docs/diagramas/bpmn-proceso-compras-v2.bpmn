@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Defs_ProcesoCompras" targetNamespace="http://lesgo.cl/bpmn/compras" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="17.11.1">
+  <bpmn:collaboration id="Collab_Compras">
+    <bpmn:participant id="P_Compras" name="LESGO · Compras" processRef="Proc_Compras" />
+    <bpmn:participant id="P_Proveedor" name="Proveedor" />
+    <bpmn:participant id="P_Logistica" name="LESGO · Logística" processRef="Proc_Logistica" />
+    <bpmn:participant id="P_Inventario" name="LESGO · Inventario" processRef="Proc_Inventario" />
+    <bpmn:messageFlow id="MF_OC" name="Orden de compra" sourceRef="T_EnviarProv" targetRef="P_Proveedor" />
+    <bpmn:messageFlow id="MF_NoDesp" name="Aviso de no despacho" sourceRef="P_Proveedor" targetRef="ICE_NoDesp" />
+    <bpmn:messageFlow id="MF_Despacho" name="Mercadería y guía de despacho" sourceRef="P_Proveedor" targetRef="Start_Despacho" />
+    <bpmn:messageFlow id="MF_Rec" name="Recepción registrada" sourceRef="T_RegRec" targetRef="ICE_Rec" />
+    <bpmn:messageFlow id="MF_Rec2" name="Recepción de la reposición" sourceRef="T_RegRec" targetRef="ICE_Nueva" />
+    <bpmn:messageFlow id="MF_Ingreso" name="Ingreso de mercadería" sourceRef="T_ConfIng" targetRef="Start_Ingreso" />
+    <bpmn:textAnnotation id="Ann_Pend"><bpmn:text>Mientras la SC está pendiente, el solicitante aún puede anularla. El gestor nunca resuelve una SC propia.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Ann_Pend_assoc" associationDirection="None" sourceRef="Ann_Pend" targetRef="T_Revisar" />
+    <bpmn:textAnnotation id="Ann_OC"><bpmn:text>Cada SC aprobada se convierte en una OC. Una OC también puede agrupar líneas de varias SC aprobadas; cada línea conserva su SC de origen.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Ann_OC_assoc" associationDirection="None" sourceRef="Ann_OC" targetRef="T_ArmarOC" />
+    <bpmn:textAnnotation id="Ann_Conf"><bpmn:text>Conforme: sumando todas las entregas, lo recibido iguala lo pedido, sin productos dañados ni de más.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Ann_Conf_assoc" associationDirection="None" sourceRef="Ann_Conf" targetRef="T_Comparar" />
+  </bpmn:collaboration>
+  <bpmn:process id="Proc_Compras" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Compras">
+      <bpmn:lane id="L_Solicitante" name="Solicitante (cualquier área)">
+        <bpmn:flowNodeRef>Start_Necesidad</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_M1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_Registrar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_EnvAnul</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_AnulBorr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_Validar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_Val</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_RevDup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_Mant</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_MP</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_RegPend</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_Gestor" name="Gestor de solicitudes">
+        <bpmn:flowNodeRef>T_Revisar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_Aprobar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_Rechazar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rech</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_Aprobar</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_Comprador" name="Comprador">
+        <bpmn:flowNodeRef>GW_M3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_ArmarOC</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_EmCan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_OcCanc1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_ValidarOC</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_ValOC</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_RegEmit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_EnviarProv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EBG_OC</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ICE_NoDesp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_CancelarOC</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_OcCanc2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ICE_Rec</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_M4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_Comparar</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_Conf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_RegProb</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_Definir</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_Res</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ICE_Nueva</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_OcCanc3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GW_M5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_RegComp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Comp</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Necesidad" name="Necesidad de sets">
+      <bpmn:outgoing>F_Start_Necesidad__GW_M1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="GW_M1">
+      <bpmn:incoming>F_Start_Necesidad__GW_M1</bpmn:incoming>
+      <bpmn:incoming>F_GW_Val__GW_M1</bpmn:incoming>
+      <bpmn:incoming>F_GW_Mant__GW_M1</bpmn:incoming>
+      <bpmn:outgoing>F_GW_M1__T_Registrar</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="T_Registrar" name="Registrar SC: motivo, productos y cantidades">
+      <bpmn:incoming>F_GW_M1__T_Registrar</bpmn:incoming>
+      <bpmn:outgoing>F_T_Registrar__GW_EnvAnul</bpmn:outgoing>
+      <bpmn:property id="T_Registrar_prop" name="__targetRef_placeholder" />
+      <bpmn:dataInputAssociation id="DIA_Catalogo"><bpmn:sourceRef>DS_Catalogo</bpmn:sourceRef><bpmn:targetRef>T_Registrar_prop</bpmn:targetRef></bpmn:dataInputAssociation>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="GW_EnvAnul" name="¿Enviar o anular?">
+      <bpmn:incoming>F_T_Registrar__GW_EnvAnul</bpmn:incoming>
+      <bpmn:outgoing>F_GW_EnvAnul__End_AnulBorr</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_EnvAnul__T_Validar</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_AnulBorr" name="SC anulada">
+      <bpmn:incoming>F_GW_EnvAnul__End_AnulBorr</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="T_Validar" name="Validar SC: datos obligatorios y duplicados">
+      <bpmn:incoming>F_GW_EnvAnul__T_Validar</bpmn:incoming>
+      <bpmn:outgoing>F_T_Validar__GW_Val</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="GW_Val" name="¿SC completa y sin duplicados?">
+      <bpmn:incoming>F_T_Validar__GW_Val</bpmn:incoming>
+      <bpmn:outgoing>F_GW_Val__GW_M1</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_Val__T_RevDup</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_Val__GW_MP</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="T_RevDup" name="Revisar SC que piden el mismo producto">
+      <bpmn:incoming>F_GW_Val__T_RevDup</bpmn:incoming>
+      <bpmn:outgoing>F_T_RevDup__GW_Mant</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="GW_Mant" name="¿Se mantiene la SC?">
+      <bpmn:incoming>F_T_RevDup__GW_Mant</bpmn:incoming>
+      <bpmn:outgoing>F_GW_Mant__GW_MP</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_Mant__GW_M1</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="GW_MP">
+      <bpmn:incoming>F_GW_Val__GW_MP</bpmn:incoming>
+      <bpmn:incoming>F_GW_Mant__GW_MP</bpmn:incoming>
+      <bpmn:outgoing>F_GW_MP__T_RegPend</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T_RegPend" name="Registrar SC pendiente">
+      <bpmn:incoming>F_GW_MP__T_RegPend</bpmn:incoming>
+      <bpmn:outgoing>F_T_RegPend__T_Revisar</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="T_Revisar" name="Revisar SC">
+      <bpmn:incoming>F_T_RegPend__T_Revisar</bpmn:incoming>
+      <bpmn:outgoing>F_T_Revisar__GW_Aprobar</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="GW_Aprobar" name="¿Aprobar SC?">
+      <bpmn:incoming>F_T_Revisar__GW_Aprobar</bpmn:incoming>
+      <bpmn:outgoing>F_GW_Aprobar__T_Rechazar</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_Aprobar__T_Aprobar</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="T_Rechazar" name="Rechazar SC indicando motivo">
+      <bpmn:incoming>F_GW_Aprobar__T_Rechazar</bpmn:incoming>
+      <bpmn:outgoing>F_T_Rechazar__End_Rech</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Rech" name="SC rechazada">
+      <bpmn:incoming>F_T_Rechazar__End_Rech</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="T_Aprobar" name="Aprobar SC">
+      <bpmn:incoming>F_GW_Aprobar__T_Aprobar</bpmn:incoming>
+      <bpmn:outgoing>F_T_Aprobar__GW_M3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="GW_M3">
+      <bpmn:incoming>F_T_Aprobar__GW_M3</bpmn:incoming>
+      <bpmn:incoming>F_GW_ValOC__GW_M3</bpmn:incoming>
+      <bpmn:outgoing>F_GW_M3__T_ArmarOC</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="T_ArmarOC" name="Armar OC: proveedor, cantidades, precios y fecha comprometida">
+      <bpmn:incoming>F_GW_M3__T_ArmarOC</bpmn:incoming>
+      <bpmn:outgoing>F_T_ArmarOC__GW_EmCan</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="GW_EmCan" name="¿Emitir o cancelar?">
+      <bpmn:incoming>F_T_ArmarOC__GW_EmCan</bpmn:incoming>
+      <bpmn:outgoing>F_GW_EmCan__End_OcCanc1</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_EmCan__T_ValidarOC</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_OcCanc1" name="OC cancelada">
+      <bpmn:incoming>F_GW_EmCan__End_OcCanc1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="T_ValidarOC" name="Validar OC y calcular totales">
+      <bpmn:incoming>F_GW_EmCan__T_ValidarOC</bpmn:incoming>
+      <bpmn:outgoing>F_T_ValidarOC__GW_ValOC</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="GW_ValOC" name="¿OC válida?">
+      <bpmn:incoming>F_T_ValidarOC__GW_ValOC</bpmn:incoming>
+      <bpmn:outgoing>F_GW_ValOC__GW_M3</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_ValOC__T_RegEmit</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T_RegEmit" name="Registrar OC emitida">
+      <bpmn:incoming>F_GW_ValOC__T_RegEmit</bpmn:incoming>
+      <bpmn:outgoing>F_T_RegEmit__T_EnviarProv</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="T_EnviarProv" name="Enviar OC al proveedor">
+      <bpmn:incoming>F_T_RegEmit__T_EnviarProv</bpmn:incoming>
+      <bpmn:outgoing>F_T_EnviarProv__EBG_OC</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:eventBasedGateway id="EBG_OC">
+      <bpmn:incoming>F_T_EnviarProv__EBG_OC</bpmn:incoming>
+      <bpmn:outgoing>F_EBG_OC__ICE_NoDesp</bpmn:outgoing>
+      <bpmn:outgoing>F_EBG_OC__ICE_Rec</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="ICE_NoDesp" name="Proveedor no despachará">
+      <bpmn:incoming>F_EBG_OC__ICE_NoDesp</bpmn:incoming>
+      <bpmn:outgoing>F_ICE_NoDesp__T_CancelarOC</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="ICE_NoDesp_def" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="T_CancelarOC" name="Cancelar OC indicando motivo">
+      <bpmn:incoming>F_ICE_NoDesp__T_CancelarOC</bpmn:incoming>
+      <bpmn:outgoing>F_T_CancelarOC__End_OcCanc2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_OcCanc2" name="OC cancelada">
+      <bpmn:incoming>F_T_CancelarOC__End_OcCanc2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:intermediateCatchEvent id="ICE_Rec" name="Recepción registrada">
+      <bpmn:incoming>F_EBG_OC__ICE_Rec</bpmn:incoming>
+      <bpmn:outgoing>F_ICE_Rec__GW_M4</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="ICE_Rec_def" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="GW_M4">
+      <bpmn:incoming>F_ICE_Rec__GW_M4</bpmn:incoming>
+      <bpmn:incoming>F_ICE_Nueva__GW_M4</bpmn:incoming>
+      <bpmn:outgoing>F_GW_M4__T_Comparar</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T_Comparar" name="Comparar lo recibido con lo pedido">
+      <bpmn:incoming>F_GW_M4__T_Comparar</bpmn:incoming>
+      <bpmn:outgoing>F_T_Comparar__GW_Conf</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="GW_Conf" name="¿Recepción conforme?">
+      <bpmn:incoming>F_T_Comparar__GW_Conf</bpmn:incoming>
+      <bpmn:outgoing>F_GW_Conf__GW_M5</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_Conf__T_RegProb</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T_RegProb" name="Registrar OC con problemas">
+      <bpmn:incoming>F_GW_Conf__T_RegProb</bpmn:incoming>
+      <bpmn:outgoing>F_T_RegProb__T_Definir</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="T_Definir" name="Definir solución para las diferencias">
+      <bpmn:incoming>F_T_RegProb__T_Definir</bpmn:incoming>
+      <bpmn:outgoing>F_T_Definir__GW_Res</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="GW_Res" name="¿Cómo se resuelve?">
+      <bpmn:incoming>F_T_Definir__GW_Res</bpmn:incoming>
+      <bpmn:outgoing>F_GW_Res__GW_M5</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_Res__End_OcCanc3</bpmn:outgoing>
+      <bpmn:outgoing>F_GW_Res__ICE_Nueva</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateCatchEvent id="ICE_Nueva" name="Reposición recibida">
+      <bpmn:incoming>F_GW_Res__ICE_Nueva</bpmn:incoming>
+      <bpmn:outgoing>F_ICE_Nueva__GW_M4</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="ICE_Nueva_def" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_OcCanc3" name="OC cancelada">
+      <bpmn:incoming>F_GW_Res__End_OcCanc3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="GW_M5">
+      <bpmn:incoming>F_GW_Conf__GW_M5</bpmn:incoming>
+      <bpmn:incoming>F_GW_Res__GW_M5</bpmn:incoming>
+      <bpmn:outgoing>F_GW_M5__T_RegComp</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T_RegComp" name="Registrar OC completada y fecha de recepción">
+      <bpmn:incoming>F_GW_M5__T_RegComp</bpmn:incoming>
+      <bpmn:outgoing>F_T_RegComp__End_Comp</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Comp" name="OC completada">
+      <bpmn:incoming>F_T_RegComp__End_Comp</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="F_Start_Necesidad__GW_M1" sourceRef="Start_Necesidad" targetRef="GW_M1" />
+    <bpmn:sequenceFlow id="F_GW_M1__T_Registrar" sourceRef="GW_M1" targetRef="T_Registrar" />
+    <bpmn:sequenceFlow id="F_T_Registrar__GW_EnvAnul" sourceRef="T_Registrar" targetRef="GW_EnvAnul" />
+    <bpmn:sequenceFlow id="F_GW_EnvAnul__End_AnulBorr" name="Anular" sourceRef="GW_EnvAnul" targetRef="End_AnulBorr" />
+    <bpmn:sequenceFlow id="F_GW_EnvAnul__T_Validar" name="Enviar" sourceRef="GW_EnvAnul" targetRef="T_Validar" />
+    <bpmn:sequenceFlow id="F_T_Validar__GW_Val" sourceRef="T_Validar" targetRef="GW_Val" />
+    <bpmn:sequenceFlow id="F_GW_Val__GW_M1" name="Faltan datos" sourceRef="GW_Val" targetRef="GW_M1" />
+    <bpmn:sequenceFlow id="F_GW_Val__T_RevDup" name="Posible duplicado" sourceRef="GW_Val" targetRef="T_RevDup" />
+    <bpmn:sequenceFlow id="F_GW_Val__GW_MP" name="Sí" sourceRef="GW_Val" targetRef="GW_MP" />
+    <bpmn:sequenceFlow id="F_T_RevDup__GW_Mant" sourceRef="T_RevDup" targetRef="GW_Mant" />
+    <bpmn:sequenceFlow id="F_GW_Mant__GW_MP" name="Sí" sourceRef="GW_Mant" targetRef="GW_MP" />
+    <bpmn:sequenceFlow id="F_GW_Mant__GW_M1" name="No, se corrige" sourceRef="GW_Mant" targetRef="GW_M1" />
+    <bpmn:sequenceFlow id="F_GW_MP__T_RegPend" sourceRef="GW_MP" targetRef="T_RegPend" />
+    <bpmn:sequenceFlow id="F_T_RegPend__T_Revisar" sourceRef="T_RegPend" targetRef="T_Revisar" />
+    <bpmn:sequenceFlow id="F_T_Revisar__GW_Aprobar" sourceRef="T_Revisar" targetRef="GW_Aprobar" />
+    <bpmn:sequenceFlow id="F_GW_Aprobar__T_Rechazar" name="No" sourceRef="GW_Aprobar" targetRef="T_Rechazar" />
+    <bpmn:sequenceFlow id="F_T_Rechazar__End_Rech" sourceRef="T_Rechazar" targetRef="End_Rech" />
+    <bpmn:sequenceFlow id="F_GW_Aprobar__T_Aprobar" name="Sí" sourceRef="GW_Aprobar" targetRef="T_Aprobar" />
+    <bpmn:sequenceFlow id="F_T_Aprobar__GW_M3" sourceRef="T_Aprobar" targetRef="GW_M3" />
+    <bpmn:sequenceFlow id="F_GW_M3__T_ArmarOC" sourceRef="GW_M3" targetRef="T_ArmarOC" />
+    <bpmn:sequenceFlow id="F_T_ArmarOC__GW_EmCan" sourceRef="T_ArmarOC" targetRef="GW_EmCan" />
+    <bpmn:sequenceFlow id="F_GW_EmCan__End_OcCanc1" name="Cancelar" sourceRef="GW_EmCan" targetRef="End_OcCanc1" />
+    <bpmn:sequenceFlow id="F_GW_EmCan__T_ValidarOC" name="Emitir" sourceRef="GW_EmCan" targetRef="T_ValidarOC" />
+    <bpmn:sequenceFlow id="F_T_ValidarOC__GW_ValOC" sourceRef="T_ValidarOC" targetRef="GW_ValOC" />
+    <bpmn:sequenceFlow id="F_GW_ValOC__GW_M3" name="No" sourceRef="GW_ValOC" targetRef="GW_M3" />
+    <bpmn:sequenceFlow id="F_GW_ValOC__T_RegEmit" name="Sí" sourceRef="GW_ValOC" targetRef="T_RegEmit" />
+    <bpmn:sequenceFlow id="F_T_RegEmit__T_EnviarProv" sourceRef="T_RegEmit" targetRef="T_EnviarProv" />
+    <bpmn:sequenceFlow id="F_T_EnviarProv__EBG_OC" sourceRef="T_EnviarProv" targetRef="EBG_OC" />
+    <bpmn:sequenceFlow id="F_EBG_OC__ICE_NoDesp" sourceRef="EBG_OC" targetRef="ICE_NoDesp" />
+    <bpmn:sequenceFlow id="F_ICE_NoDesp__T_CancelarOC" sourceRef="ICE_NoDesp" targetRef="T_CancelarOC" />
+    <bpmn:sequenceFlow id="F_T_CancelarOC__End_OcCanc2" sourceRef="T_CancelarOC" targetRef="End_OcCanc2" />
+    <bpmn:sequenceFlow id="F_EBG_OC__ICE_Rec" sourceRef="EBG_OC" targetRef="ICE_Rec" />
+    <bpmn:sequenceFlow id="F_ICE_Rec__GW_M4" sourceRef="ICE_Rec" targetRef="GW_M4" />
+    <bpmn:sequenceFlow id="F_GW_M4__T_Comparar" sourceRef="GW_M4" targetRef="T_Comparar" />
+    <bpmn:sequenceFlow id="F_T_Comparar__GW_Conf" sourceRef="T_Comparar" targetRef="GW_Conf" />
+    <bpmn:sequenceFlow id="F_GW_Conf__GW_M5" name="Sí" sourceRef="GW_Conf" targetRef="GW_M5" />
+    <bpmn:sequenceFlow id="F_GW_Conf__T_RegProb" name="No" sourceRef="GW_Conf" targetRef="T_RegProb" />
+    <bpmn:sequenceFlow id="F_T_RegProb__T_Definir" sourceRef="T_RegProb" targetRef="T_Definir" />
+    <bpmn:sequenceFlow id="F_T_Definir__GW_Res" sourceRef="T_Definir" targetRef="GW_Res" />
+    <bpmn:sequenceFlow id="F_GW_Res__GW_M5" name="Aceptar lo recibido" sourceRef="GW_Res" targetRef="GW_M5" />
+    <bpmn:sequenceFlow id="F_GW_Res__End_OcCanc3" name="Cancelar OC" sourceRef="GW_Res" targetRef="End_OcCanc3" />
+    <bpmn:sequenceFlow id="F_GW_Res__ICE_Nueva" name="Esperar reposición" sourceRef="GW_Res" targetRef="ICE_Nueva" />
+    <bpmn:sequenceFlow id="F_ICE_Nueva__GW_M4" sourceRef="ICE_Nueva" targetRef="GW_M4" />
+    <bpmn:sequenceFlow id="F_GW_M5__T_RegComp" sourceRef="GW_M5" targetRef="T_RegComp" />
+    <bpmn:sequenceFlow id="F_T_RegComp__End_Comp" sourceRef="T_RegComp" targetRef="End_Comp" />
+    <bpmn:dataStoreReference id="DS_Catalogo" name="Catálogo de productos (Inventario)" />
+  </bpmn:process>
+  <bpmn:process id="Proc_Logistica" isExecutable="false">
+    <bpmn:startEvent id="Start_Despacho" name="Despacho recibido con guía">
+      <bpmn:outgoing>F_Start_Despacho__T_Verificar</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="Start_Despacho_def" />
+    </bpmn:startEvent>
+    <bpmn:userTask id="T_Verificar" name="Verificar mercadería contra guía y OC">
+      <bpmn:incoming>F_Start_Despacho__T_Verificar</bpmn:incoming>
+      <bpmn:outgoing>F_T_Verificar__T_RegRec</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T_RegRec" name="Registrar cantidades recibidas y dañadas">
+      <bpmn:incoming>F_T_Verificar__T_RegRec</bpmn:incoming>
+      <bpmn:outgoing>F_T_RegRec__T_ConfIng</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="T_ConfIng" name="Confirmar ingreso a Inventario">
+      <bpmn:incoming>F_T_RegRec__T_ConfIng</bpmn:incoming>
+      <bpmn:outgoing>F_T_ConfIng__End_Log</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="End_Log" name="Recepción cerrada">
+      <bpmn:incoming>F_T_ConfIng__End_Log</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="F_Start_Despacho__T_Verificar" sourceRef="Start_Despacho" targetRef="T_Verificar" />
+    <bpmn:sequenceFlow id="F_T_Verificar__T_RegRec" sourceRef="T_Verificar" targetRef="T_RegRec" />
+    <bpmn:sequenceFlow id="F_T_RegRec__T_ConfIng" sourceRef="T_RegRec" targetRef="T_ConfIng" />
+    <bpmn:sequenceFlow id="F_T_ConfIng__End_Log" sourceRef="T_ConfIng" targetRef="End_Log" />
+  </bpmn:process>
+  <bpmn:process id="Proc_Inventario" isExecutable="false">
+    <bpmn:startEvent id="Start_Ingreso" name="Ingreso confirmado">
+      <bpmn:outgoing>F_Start_Ingreso__T_ActStock</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="Start_Ingreso_def" />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="T_ActStock" name="Actualizar stock de la bodega">
+      <bpmn:incoming>F_Start_Ingreso__T_ActStock</bpmn:incoming>
+      <bpmn:outgoing>F_T_ActStock__End_Inv</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Inv" name="Stock actualizado">
+      <bpmn:incoming>F_T_ActStock__End_Inv</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="F_Start_Ingreso__T_ActStock" sourceRef="Start_Ingreso" targetRef="T_ActStock" />
+    <bpmn:sequenceFlow id="F_T_ActStock__End_Inv" sourceRef="T_ActStock" targetRef="End_Inv" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Compras">
+    <bpmndi:BPMNPlane id="Plane_Compras" bpmnElement="Collab_Compras">
+      <bpmndi:BPMNShape id="P_Compras_di" bpmnElement="P_Compras" isHorizontal="true"><dc:Bounds x="100" y="60" width="4420" height="1120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="P_Proveedor_di" bpmnElement="P_Proveedor" isHorizontal="true"><dc:Bounds x="2560" y="1260" width="540" height="60" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="P_Logistica_di" bpmnElement="P_Logistica" isHorizontal="true"><dc:Bounds x="2560" y="1390" width="1290" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="P_Inventario_di" bpmnElement="P_Inventario" isHorizontal="true"><dc:Bounds x="2560" y="1630" width="1290" height="160" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_Solicitante_di" bpmnElement="L_Solicitante" isHorizontal="true"><dc:Bounds x="130" y="60" width="4390" height="370" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_Gestor_di" bpmnElement="L_Gestor" isHorizontal="true"><dc:Bounds x="130" y="430" width="4390" height="280" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_Comprador_di" bpmnElement="L_Comprador" isHorizontal="true"><dc:Bounds x="130" y="710" width="4390" height="470" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Necesidad_di" bpmnElement="Start_Necesidad"><dc:Bounds x="202" y="157" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="175" y="199" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_M1_di" bpmnElement="GW_M1" isMarkerVisible="true"><dc:Bounds x="290" y="150" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_Registrar_di" bpmnElement="T_Registrar"><dc:Bounds x="385" y="125" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_EnvAnul_di" bpmnElement="GW_EnvAnul" isMarkerVisible="true"><dc:Bounds x="575" y="150" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="555" y="131" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_AnulBorr_di" bpmnElement="End_AnulBorr"><dc:Bounds x="582" y="297" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="555" y="339" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_Validar_di" bpmnElement="T_Validar"><dc:Bounds x="685" y="125" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_Val_di" bpmnElement="GW_Val" isMarkerVisible="true"><dc:Bounds x="875" y="150" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="912" y="205" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_RevDup_di" bpmnElement="T_RevDup"><dc:Bounds x="835" y="265" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_Mant_di" bpmnElement="GW_Mant" isMarkerVisible="true"><dc:Bounds x="1035" y="290" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="1015" y="258" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_MP_di" bpmnElement="GW_MP" isMarkerVisible="true"><dc:Bounds x="1165" y="150" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_RegPend_di" bpmnElement="T_RegPend"><dc:Bounds x="1265" y="125" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_Revisar_di" bpmnElement="T_Revisar"><dc:Bounds x="1265" y="580" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_Aprobar_di" bpmnElement="GW_Aprobar" isMarkerVisible="true"><dc:Bounds x="1455" y="605" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="1435" y="660" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_Rechazar_di" bpmnElement="T_Rechazar"><dc:Bounds x="1565" y="455" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Rech_di" bpmnElement="End_Rech"><dc:Bounds x="1772" y="487" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1745" y="529" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_Aprobar_di" bpmnElement="T_Aprobar"><dc:Bounds x="1565" y="580" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_M3_di" bpmnElement="GW_M3" isMarkerVisible="true"><dc:Bounds x="1715" y="835" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_ArmarOC_di" bpmnElement="T_ArmarOC"><dc:Bounds x="1825" y="810" width="150" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_EmCan_di" bpmnElement="GW_EmCan" isMarkerVisible="true"><dc:Bounds x="2025" y="835" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="2005" y="803" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_OcCanc1_di" bpmnElement="End_OcCanc1"><dc:Bounds x="2032" y="997" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2005" y="1039" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_ValidarOC_di" bpmnElement="T_ValidarOC"><dc:Bounds x="2135" y="810" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_ValOC_di" bpmnElement="GW_ValOC" isMarkerVisible="true"><dc:Bounds x="2325" y="835" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="2305" y="890" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_RegEmit_di" bpmnElement="T_RegEmit"><dc:Bounds x="2435" y="810" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_EnviarProv_di" bpmnElement="T_EnviarProv"><dc:Bounds x="2595" y="810" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EBG_OC_di" bpmnElement="EBG_OC"><dc:Bounds x="2785" y="835" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ICE_NoDesp_di" bpmnElement="ICE_NoDesp"><dc:Bounds x="2792" y="997" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2694" y="1002" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_CancelarOC_di" bpmnElement="T_CancelarOC"><dc:Bounds x="2885" y="965" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_OcCanc2_di" bpmnElement="End_OcCanc2"><dc:Bounds x="3082" y="997" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="3055" y="1039" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ICE_Rec_di" bpmnElement="ICE_Rec"><dc:Bounds x="3207" y="842" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="3180" y="809" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_M4_di" bpmnElement="GW_M4" isMarkerVisible="true"><dc:Bounds x="3295" y="835" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_Comparar_di" bpmnElement="T_Comparar"><dc:Bounds x="3395" y="810" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_Conf_di" bpmnElement="GW_Conf" isMarkerVisible="true"><dc:Bounds x="3595" y="835" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="3575" y="803" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_RegProb_di" bpmnElement="T_RegProb"><dc:Bounds x="3555" y="965" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_Definir_di" bpmnElement="T_Definir"><dc:Bounds x="3725" y="965" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_Res_di" bpmnElement="GW_Res" isMarkerVisible="true"><dc:Bounds x="3935" y="990" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="3861" y="1045" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ICE_Nueva_di" bpmnElement="ICE_Nueva"><dc:Bounds x="3942" y="1107" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="3986" y="1112" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_OcCanc3_di" bpmnElement="End_OcCanc3"><dc:Bounds x="4092" y="997" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="4065" y="1039" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_M5_di" bpmnElement="GW_M5" isMarkerVisible="true"><dc:Bounds x="4125" y="835" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_RegComp_di" bpmnElement="T_RegComp"><dc:Bounds x="4225" y="810" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Comp_di" bpmnElement="End_Comp"><dc:Bounds x="4412" y="842" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="4385" y="884" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Despacho_di" bpmnElement="Start_Despacho"><dc:Bounds x="2907" y="1457" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2880" y="1499" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_Verificar_di" bpmnElement="T_Verificar"><dc:Bounds x="3000" y="1425" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_RegRec_di" bpmnElement="T_RegRec"><dc:Bounds x="3180" y="1425" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_ConfIng_di" bpmnElement="T_ConfIng"><dc:Bounds x="3360" y="1425" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Log_di" bpmnElement="End_Log"><dc:Bounds x="3557" y="1457" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="3530" y="1499" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Ingreso_di" bpmnElement="Start_Ingreso"><dc:Bounds x="3407" y="1692" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="3380" y="1734" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_ActStock_di" bpmnElement="T_ActStock"><dc:Bounds x="3500" y="1660" width="130" height="100" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Inv_di" bpmnElement="End_Inv"><dc:Bounds x="3697" y="1692" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="3670" y="1734" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DS_Catalogo_di" bpmnElement="DS_Catalogo"><dc:Bounds x="425" y="290" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="405" y="346" width="90" height="40.6" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Ann_Pend_di" bpmnElement="Ann_Pend"><dc:Bounds x="1010" y="588" width="230" height="84" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Ann_OC_di" bpmnElement="Ann_OC"><dc:Bounds x="1480" y="985" width="330" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Ann_Conf_di" bpmnElement="Ann_Conf"><dc:Bounds x="3380" y="720" width="340" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="F_Start_Necesidad__GW_M1_di" bpmnElement="F_Start_Necesidad__GW_M1"><di:waypoint x="238" y="175" /><di:waypoint x="290" y="175" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_M1__T_Registrar_di" bpmnElement="F_GW_M1__T_Registrar"><di:waypoint x="340" y="175" /><di:waypoint x="385" y="175" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_Registrar__GW_EnvAnul_di" bpmnElement="F_T_Registrar__GW_EnvAnul"><di:waypoint x="515" y="175" /><di:waypoint x="575" y="175" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_EnvAnul__End_AnulBorr_di" bpmnElement="F_GW_EnvAnul__End_AnulBorr"><di:waypoint x="600" y="200" /><di:waypoint x="600" y="297" /><bpmndi:BPMNLabel><dc:Bounds x="583" y="225" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_EnvAnul__T_Validar_di" bpmnElement="F_GW_EnvAnul__T_Validar"><di:waypoint x="625" y="175" /><di:waypoint x="685" y="175" /><bpmndi:BPMNLabel><dc:Bounds x="610" y="157" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_Validar__GW_Val_di" bpmnElement="F_T_Validar__GW_Val"><di:waypoint x="815" y="175" /><di:waypoint x="875" y="175" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Val__GW_M1_di" bpmnElement="F_GW_Val__GW_M1"><di:waypoint x="900" y="150" /><di:waypoint x="900" y="95" /><di:waypoint x="315" y="95" /><di:waypoint x="315" y="150" /><bpmndi:BPMNLabel><dc:Bounds x="897" y="101" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Val__T_RevDup_di" bpmnElement="F_GW_Val__T_RevDup"><di:waypoint x="900" y="200" /><di:waypoint x="900" y="265" /><bpmndi:BPMNLabel><dc:Bounds x="807" y="231" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Val__GW_MP_di" bpmnElement="F_GW_Val__GW_MP"><di:waypoint x="925" y="175" /><di:waypoint x="1165" y="175" /><bpmndi:BPMNLabel><dc:Bounds x="1000" y="157" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_RevDup__GW_Mant_di" bpmnElement="F_T_RevDup__GW_Mant"><di:waypoint x="965" y="315" /><di:waypoint x="1035" y="315" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Mant__GW_MP_di" bpmnElement="F_GW_Mant__GW_MP"><di:waypoint x="1085" y="315" /><di:waypoint x="1190" y="315" /><di:waypoint x="1190" y="200" /><bpmndi:BPMNLabel><dc:Bounds x="1067" y="297" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Mant__GW_M1_di" bpmnElement="F_GW_Mant__GW_M1"><di:waypoint x="1060" y="340" /><di:waypoint x="1060" y="405" /><di:waypoint x="315" y="405" /><di:waypoint x="315" y="200" /><bpmndi:BPMNLabel><dc:Bounds x="1065" y="355" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_MP__T_RegPend_di" bpmnElement="F_GW_MP__T_RegPend"><di:waypoint x="1215" y="175" /><di:waypoint x="1265" y="175" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_RegPend__T_Revisar_di" bpmnElement="F_T_RegPend__T_Revisar"><di:waypoint x="1330" y="225" /><di:waypoint x="1330" y="580" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_Revisar__GW_Aprobar_di" bpmnElement="F_T_Revisar__GW_Aprobar"><di:waypoint x="1395" y="630" /><di:waypoint x="1455" y="630" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Aprobar__T_Rechazar_di" bpmnElement="F_GW_Aprobar__T_Rechazar"><di:waypoint x="1480" y="605" /><di:waypoint x="1480" y="505" /><di:waypoint x="1565" y="505" /><bpmndi:BPMNLabel><dc:Bounds x="1455" y="555" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_Rechazar__End_Rech_di" bpmnElement="F_T_Rechazar__End_Rech"><di:waypoint x="1695" y="505" /><di:waypoint x="1772" y="505" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Aprobar__T_Aprobar_di" bpmnElement="F_GW_Aprobar__T_Aprobar"><di:waypoint x="1505" y="630" /><di:waypoint x="1565" y="630" /><bpmndi:BPMNLabel><dc:Bounds x="1490" y="612" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_Aprobar__GW_M3_di" bpmnElement="F_T_Aprobar__GW_M3"><di:waypoint x="1630" y="680" /><di:waypoint x="1630" y="860" /><di:waypoint x="1715" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_M3__T_ArmarOC_di" bpmnElement="F_GW_M3__T_ArmarOC"><di:waypoint x="1765" y="860" /><di:waypoint x="1825" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_ArmarOC__GW_EmCan_di" bpmnElement="F_T_ArmarOC__GW_EmCan"><di:waypoint x="1975" y="860" /><di:waypoint x="2025" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_EmCan__End_OcCanc1_di" bpmnElement="F_GW_EmCan__End_OcCanc1"><di:waypoint x="2050" y="885" /><di:waypoint x="2050" y="997" /><bpmndi:BPMNLabel><dc:Bounds x="2039" y="910" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_EmCan__T_ValidarOC_di" bpmnElement="F_GW_EmCan__T_ValidarOC"><di:waypoint x="2075" y="860" /><di:waypoint x="2135" y="860" /><bpmndi:BPMNLabel><dc:Bounds x="2060" y="842" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_ValidarOC__GW_ValOC_di" bpmnElement="F_T_ValidarOC__GW_ValOC"><di:waypoint x="2265" y="860" /><di:waypoint x="2325" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_ValOC__GW_M3_di" bpmnElement="F_GW_ValOC__GW_M3"><di:waypoint x="2350" y="835" /><di:waypoint x="2350" y="765" /><di:waypoint x="1740" y="765" /><di:waypoint x="1740" y="835" /><bpmndi:BPMNLabel><dc:Bounds x="2323" y="777" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_ValOC__T_RegEmit_di" bpmnElement="F_GW_ValOC__T_RegEmit"><di:waypoint x="2375" y="860" /><di:waypoint x="2435" y="860" /><bpmndi:BPMNLabel><dc:Bounds x="2360" y="842" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_RegEmit__T_EnviarProv_di" bpmnElement="F_T_RegEmit__T_EnviarProv"><di:waypoint x="2565" y="860" /><di:waypoint x="2595" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_EnviarProv__EBG_OC_di" bpmnElement="F_T_EnviarProv__EBG_OC"><di:waypoint x="2725" y="860" /><di:waypoint x="2785" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_EBG_OC__ICE_NoDesp_di" bpmnElement="F_EBG_OC__ICE_NoDesp"><di:waypoint x="2810" y="885" /><di:waypoint x="2810" y="997" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_ICE_NoDesp__T_CancelarOC_di" bpmnElement="F_ICE_NoDesp__T_CancelarOC"><di:waypoint x="2828" y="1015" /><di:waypoint x="2885" y="1015" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_CancelarOC__End_OcCanc2_di" bpmnElement="F_T_CancelarOC__End_OcCanc2"><di:waypoint x="3015" y="1015" /><di:waypoint x="3082" y="1015" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_EBG_OC__ICE_Rec_di" bpmnElement="F_EBG_OC__ICE_Rec"><di:waypoint x="2835" y="860" /><di:waypoint x="3207" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_ICE_Rec__GW_M4_di" bpmnElement="F_ICE_Rec__GW_M4"><di:waypoint x="3243" y="860" /><di:waypoint x="3295" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_M4__T_Comparar_di" bpmnElement="F_GW_M4__T_Comparar"><di:waypoint x="3345" y="860" /><di:waypoint x="3395" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_Comparar__GW_Conf_di" bpmnElement="F_T_Comparar__GW_Conf"><di:waypoint x="3525" y="860" /><di:waypoint x="3595" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Conf__GW_M5_di" bpmnElement="F_GW_Conf__GW_M5"><di:waypoint x="3645" y="860" /><di:waypoint x="4125" y="860" /><bpmndi:BPMNLabel><dc:Bounds x="3655" y="842" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Conf__T_RegProb_di" bpmnElement="F_GW_Conf__T_RegProb"><di:waypoint x="3620" y="885" /><di:waypoint x="3620" y="965" /><bpmndi:BPMNLabel><dc:Bounds x="3593" y="905" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_RegProb__T_Definir_di" bpmnElement="F_T_RegProb__T_Definir"><di:waypoint x="3685" y="1015" /><di:waypoint x="3725" y="1015" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_Definir__GW_Res_di" bpmnElement="F_T_Definir__GW_Res"><di:waypoint x="3855" y="1015" /><di:waypoint x="3935" y="1015" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Res__GW_M5_di" bpmnElement="F_GW_Res__GW_M5"><di:waypoint x="3960" y="990" /><di:waypoint x="3960" y="940" /><di:waypoint x="4150" y="940" /><di:waypoint x="4150" y="885" /><bpmndi:BPMNLabel><dc:Bounds x="4005" y="909" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Res__End_OcCanc3_di" bpmnElement="F_GW_Res__End_OcCanc3"><di:waypoint x="3985" y="1015" /><di:waypoint x="4092" y="1015" /><bpmndi:BPMNLabel><dc:Bounds x="3990" y="997" width="90" height="14.2" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_Res__ICE_Nueva_di" bpmnElement="F_GW_Res__ICE_Nueva"><di:waypoint x="3960" y="1040" /><di:waypoint x="3960" y="1107" /><bpmndi:BPMNLabel><dc:Bounds x="3969" y="1049" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_ICE_Nueva__GW_M4_di" bpmnElement="F_ICE_Nueva__GW_M4"><di:waypoint x="3942" y="1125" /><di:waypoint x="3320" y="1125" /><di:waypoint x="3320" y="885" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_GW_M5__T_RegComp_di" bpmnElement="F_GW_M5__T_RegComp"><di:waypoint x="4175" y="860" /><di:waypoint x="4225" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_RegComp__End_Comp_di" bpmnElement="F_T_RegComp__End_Comp"><di:waypoint x="4355" y="860" /><di:waypoint x="4412" y="860" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Start_Despacho__T_Verificar_di" bpmnElement="F_Start_Despacho__T_Verificar"><di:waypoint x="2943" y="1475" /><di:waypoint x="3000" y="1475" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_Verificar__T_RegRec_di" bpmnElement="F_T_Verificar__T_RegRec"><di:waypoint x="3130" y="1475" /><di:waypoint x="3180" y="1475" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_RegRec__T_ConfIng_di" bpmnElement="F_T_RegRec__T_ConfIng"><di:waypoint x="3310" y="1475" /><di:waypoint x="3360" y="1475" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_ConfIng__End_Log_di" bpmnElement="F_T_ConfIng__End_Log"><di:waypoint x="3490" y="1475" /><di:waypoint x="3557" y="1475" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Start_Ingreso__T_ActStock_di" bpmnElement="F_Start_Ingreso__T_ActStock"><di:waypoint x="3443" y="1710" /><di:waypoint x="3500" y="1710" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_T_ActStock__End_Inv_di" bpmnElement="F_T_ActStock__End_Inv"><di:waypoint x="3630" y="1710" /><di:waypoint x="3697" y="1710" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_OC_di" bpmnElement="MF_OC"><di:waypoint x="2660" y="910" /><di:waypoint x="2660" y="1260" /><bpmndi:BPMNLabel><dc:Bounds x="2563" y="1192" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_NoDesp_di" bpmnElement="MF_NoDesp"><di:waypoint x="2810" y="1260" /><di:waypoint x="2810" y="1033" /><bpmndi:BPMNLabel><dc:Bounds x="2817" y="1192" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Despacho_di" bpmnElement="MF_Despacho"><di:waypoint x="2925" y="1320" /><di:waypoint x="2925" y="1457" /><bpmndi:BPMNLabel><dc:Bounds x="2934" y="1328" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Rec_di" bpmnElement="MF_Rec"><di:waypoint x="3225" y="1425" /><di:waypoint x="3225" y="878" /><bpmndi:BPMNLabel><dc:Bounds x="3128" y="1192" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Rec2_di" bpmnElement="MF_Rec2"><di:waypoint x="3275" y="1425" /><di:waypoint x="3275" y="1225" /><di:waypoint x="3960" y="1225" /><di:waypoint x="3960" y="1143" /><bpmndi:BPMNLabel><dc:Bounds x="3575" y="1194" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Ingreso_di" bpmnElement="MF_Ingreso"><di:waypoint x="3425" y="1525" /><di:waypoint x="3425" y="1692" /><bpmndi:BPMNLabel><dc:Bounds x="3434" y="1568" width="90" height="27.4" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Ann_Pend_assoc_di" bpmnElement="Ann_Pend_assoc"><di:waypoint x="1240" y="630" /><di:waypoint x="1265" y="630" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Ann_OC_assoc_di" bpmnElement="Ann_OC_assoc"><di:waypoint x="1810" y="1005" /><di:waypoint x="1880" y="910" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Ann_Conf_assoc_di" bpmnElement="Ann_Conf_assoc"><di:waypoint x="3460" y="770" /><di:waypoint x="3460" y="810" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DIA_Catalogo_di" bpmnElement="DIA_Catalogo"><di:waypoint x="450" y="290" /><di:waypoint x="450" y="225" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
