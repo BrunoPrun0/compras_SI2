@@ -30,8 +30,16 @@ const formatoFecha = new Intl.DateTimeFormat('es-CL', {
 export const fechaHora = (iso: string | null | undefined) =>
   iso ? formatoFechaHora.format(new Date(iso)) : '—';
 
-export const fecha = (iso: string | null | undefined) =>
-  iso ? formatoFecha.format(new Date(iso)) : '—';
+/** Acepta FechaHora o Fecha ("AAAA-MM-DD"). La Fecha es un día de calendario: no se convierte de zona. */
+export function fecha(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const dia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (dia) return `${dia[3]}-${dia[2]}-${dia[1]}`;
+  return formatoFecha.format(new Date(iso));
+}
+
+/** Hoy en Chile como "AAAA-MM-DD" (para comparar con fechas comprometidas). */
+export const hoy = () => new Intl.DateTimeFormat('en-CA', { timeZone: ZONA }).format(new Date());
 
 /** Dígito verificador (módulo 11). Misma regla que el backend (V1). */
 function calcularDv(cuerpo: string): string {

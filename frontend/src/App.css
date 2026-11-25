@@ -259,7 +259,6 @@
   color: var(--text-muted);
 }
 
-
 .content-placeholder-area {
   background-color: var(--surface-card);
   border: 1px dashed var(--border-light);
@@ -792,6 +791,44 @@
 .input-cantidad {
   width: 90px;
   text-align: right;
+}
+
+.input-precio {
+  width: 120px;
+  text-align: right;
+}
+
+/* Subtotal, IVA y total de una orden de compra, alineados a la derecha */
+.totales {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: end;
+  gap: 4px 24px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.totales dt {
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.totales dd {
+  text-align: right;
+  color: var(--text-main);
+}
+
+.totales .totales-final {
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--text-main);
+  border-top: 1px solid var(--border-light);
+  padding-top: 6px;
+}
+
+.texto-alerta {
+  color: #b91c1c;
+  font-weight: 700;
 }
 
 .buscador-productos {

@@ -76,6 +76,48 @@ export interface DuplicadoSc {
   cantidad: number;
 }
 
+// ---------- Órdenes de compra ----------
+
+export interface LineaOc {
+  idDetalle: number;
+  idScDetalle: number;
+  folioSc: string;
+  producto: Producto;
+  cantidad: number;
+  precioUnitario: number;
+  subtotalLinea: number;
+}
+
+export interface OrdenResumen {
+  idOc: number;
+  folio: string;
+  proveedor: Pick<Proveedor, 'idProveedor' | 'rutNit' | 'razonSocial'>;
+  comprador: EmpleadoRef;
+  estado: EstadoOc;
+  fechaCreacion: FechaHora;
+  fechaEmision: FechaHora | null;
+  fechaEntregaEsperada: Fecha | null;
+  total: number;
+}
+
+export interface OrdenDetalle extends OrdenResumen {
+  lineas: LineaOc[];
+  subtotal: number;
+  impuesto: number;
+  fechaRecepcionReal: Fecha | null;
+  motivoCancelacion: string | null;
+  historial: HistorialItem[];
+}
+
+/** Línea de SC APROBADA que todavía no está en una OC activa (para armar una OC). */
+export interface LineaDisponible {
+  idScDetalle: number;
+  folioSc: string;
+  solicitante: EmpleadoRef;
+  producto: Producto;
+  cantidadSolicitada: number;
+}
+
 export interface Paginado<T> {
   items: T[];
   total: number;
@@ -102,3 +144,11 @@ export interface SolicitudEntrada {
   motivo?: string | null;
   lineas: LineaEntrada[];
 }
+
+export interface OrdenEntrada {
+  idProveedor: number;
+  fechaEntregaEsperada: Fecha;
+  lineas: { idScDetalle: number; cantidad: number; precioUnitario: number }[];
+}
+
+export type ResultadoResolucion = 'COMPLETADA' | 'CANCELADA';
